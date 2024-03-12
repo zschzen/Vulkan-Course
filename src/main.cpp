@@ -6,11 +6,10 @@
 #include <glm/glm.hpp>
 #include <glm/mat4x4.hpp>
 
-
 #include <iostream>
 
 int
-main(int argc, char **argv)
+main(void)
 {
     glfwInit();
 
@@ -18,14 +17,26 @@ main(int argc, char **argv)
     GLFWwindow *window = glfwCreateWindow(800, 600, "Vulkan window", nullptr, nullptr);
 
     // Check how many extensions are supported
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-    printf("Extension count: %d\n", extensionCount);
+    {
+        uint32_t extensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+        printf("Extension count: %d\n", extensionCount);
+
+        // Print instance extensions
+        VkExtensionProperties extensions[extensionCount];
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions);
+        for (uint32_t i = 0; i < extensionCount; i++)
+        {
+            printf("\t%d: %s\n", i, extensions[i].extensionName);
+        }
+    }
 
     // Test glm
-    glm::mat4 matrix {1.0F};
-    glm::vec4 vec {1.0F};
-    auto test = matrix * vec; (void)test;
+    {
+        glm::mat4 matrix{1.0F};
+        glm::vec4 vec{1.0F};
+        auto test = matrix * vec; (void)test;
+    }
 
     while (!glfwWindowShouldClose(window))
     {
