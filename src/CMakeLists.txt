@@ -1,9 +1,12 @@
 set(VULKAN_COURSE_SOURCE_FILES
         main.cpp
+
+        VulkanRenderer.cpp
 )
 
 set(VULKAN_COURSE_HEADER_FILES
-
+        VulkanRenderer.h
+        Utilities.h
 )
 
 add_executable(VulkanCourse)

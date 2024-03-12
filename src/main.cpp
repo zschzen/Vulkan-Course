@@ -1,57 +1,54 @@
 #define GLFW_INCLUDE_VULKAN
+
 #include <GLFW/glfw3.h>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/mat4x4.hpp>
-
+#include <stdexcept>
+#include <vector>
 #include <iostream>
 
-int
-main(void)
+#define DEBUG
+
+#include "VulkanRenderer.h"
+
+GLFWwindow *window;
+VulkanRenderer vulkanRenderer;
+
+void
+InitWindow(const std::string &wName = "Test Window", const int width = 800, const int height = 600)
 {
-    glfwInit();
+	if (!glfwInit()) throw std::runtime_error("Failed to initialize GLFW");
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    GLFWwindow *window = glfwCreateWindow(800, 600, "Vulkan window", nullptr, nullptr);
+	// Set GLFW to not create an OpenGL context
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    // Check how many extensions are supported
-    {
-        uint32_t extensionCount = 0;
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-        printf("Extension count: %d\n", extensionCount);
+	window = glfwCreateWindow(width, height, wName.c_str(), nullptr, nullptr);
+}
 
-        // Print instance extensions
-        VkExtensionProperties extensions[extensionCount];
-        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions);
-        for (uint32_t i = 0; i < extensionCount; i++)
-        {
-            printf("\t%d: %s\n", i, extensions[i].extensionName);
-        }
-    }
+int
+main()
+{
+	// Window setup
+	InitWindow("Test Window", 800, 600);
 
-    // Test glm
-    {
-        glm::mat4 matrix{1.0F};
-        glm::vec4 vec{1.0F};
-        auto test = matrix * vec; (void)test;
-    }
+	// Try to create Vulkan Instance
+	if (vulkanRenderer.Init(window) != EXIT_SUCCESS) return EXIT_FAILURE;
 
-    while (!glfwWindowShouldClose(window))
-    {
-        glfwPollEvents();
+	// Main loop
+	bool isRunning = true;
+	while (isRunning && !glfwWindowShouldClose(window))
+	{
+		glfwPollEvents();
 
-        // if ESC is pressed, close the window
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        {
-            glfwSetWindowShouldClose(window, 1);
-        }
-    }
+		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		{
+			isRunning = false;
+			glfwSetWindowShouldClose(window, GLFW_TRUE);
+		}
+	}
 
-    glfwDestroyWindow(window);
-
-    glfwTerminate();
-
-    return 0;
+	// Clean up
+	glfwDestroyWindow(window);
+	glfwTerminate();
+	return 0;
 }
