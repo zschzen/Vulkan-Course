@@ -1,14 +1,14 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <stdexcept>
-#include <vector>
-#include <iostream>
-
 #include "VulkanRenderer.h"
 
+
+//
 GLFWwindow *window;
 VulkanRenderer vulkanRenderer;
+
+
 
 void
 InitWindow(const std::string &wName = "Test Window", const int width = 800, const int height = 600)
@@ -32,15 +32,17 @@ main()
 	if (vulkanRenderer.Init(window) != EXIT_SUCCESS) return EXIT_FAILURE;
 
 	// Main loop
-	bool isRunning = true;
-	while (isRunning && !glfwWindowShouldClose(window))
 	{
-		glfwPollEvents();
-
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		bool isRunning = true;
+		while (isRunning && !glfwWindowShouldClose(window))
 		{
-			isRunning = false;
-			glfwSetWindowShouldClose(window, GLFW_TRUE);
+			glfwPollEvents();
+
+			if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+			{
+				isRunning = false;
+				glfwSetWindowShouldClose(window, GLFW_TRUE);
+			}
 		}
 	}
 
