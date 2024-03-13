@@ -5,7 +5,8 @@
 typedef struct queueFamilyIndices_t
 {
 	// Locations
-	uint32_t graphicsFamily = -1;
+	int graphicsFamily     = -1;
+	int presentationFamily = -1;
 
 	/** @brief Check if the queue families are valid */
 	[[nodiscard]] inline bool IsValid() const { return graphicsFamily >= 0; }
