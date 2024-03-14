@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <set>
 
 #include "Utilities.h"
 
@@ -72,6 +73,9 @@ private:
 	/** @brief The Vulkan instance */
 	VkInstance m_instance {nullptr};
 
+	/** @brief The Vulkan surface */
+	VkSurfaceKHR m_surface {nullptr};
+
 	/**
 	 * @struct MainDevice
 	 * @brief Contains information about the Vulkan device and memory
@@ -80,9 +84,11 @@ private:
 	{
 		VkPhysicalDevice  physicalDevice;    // Physical device (GPU) that Vulkan will use
 		VkDevice          logicalDevice;     // Logical device (application's view of the physical device) that Vulkan will use
-	} mainDevice {};
+	} m_mainDevice {};
 
-	VkQueue graphicsQueue {};    // Queue that handles the passing of command buffers for rendering
+	// Handles to values. Don't actually hold values
+	VkQueue m_graphicsQueue {};     // Queue that handles the passing of command buffers for rendering
+	VkQueue m_presentationQueue {}; // Queue that handles presentation of images to the surface
 
 
 	// ======================================================================================================================
@@ -100,6 +106,8 @@ private:
 	/** @brief Create the debug messenger to enable validation layers */
 	void CreateDebugMessenger();
 
+	/** @brief Create the surface to render to */
+	void CreateSurface();
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Get Functions ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -132,13 +140,20 @@ private:
 	bool TryCheckInstanceExtensionSupport(std::vector<const char *> *checkExtensions, std::string &outUnSupExt);
 
 	/**
+	 * @brief Checks if the Device extensions are supported
+	 * @param device The physical device to check the extensions on
+	 * @param outUnSupDevExt The unsupported device extension
+	 * @return True if the device extensions are supported
+	 */
+	bool TryCheckDeviceExtensionSupport(VkPhysicalDevice device, std::string &outUnSupDevExt);
+
+	/**
 	 * @brief Checks if the given Vulkan physical device is suitable.
 	 *
 	 * @param device The Vulkan physical device to check.
 	 * @return True if the device is suitable, false otherwise.
 	 */
 	bool CheckDeviceSuitable(VkPhysicalDevice device);
-
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Get Functions +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -149,6 +164,14 @@ private:
 	 * @return The indices of queue families that exist on the device
 	 */
 	queueFamilyIndices_t GetQueueFamilies(VkPhysicalDevice device);
+
+	/**
+	 * @brief Get the swap chain details
+	 *
+	 * @param device The physical device to check the swap chain details on
+	 * @return The swap chain details
+	 */
+	swapChainDetails_t GetSwapChainDetails(VkPhysicalDevice device);
 
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Debug Functions +++++++++++++++++++++++++++++++++++++++++++++++++++++
