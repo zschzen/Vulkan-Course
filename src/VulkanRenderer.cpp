@@ -37,7 +37,7 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 void
 VulkanRenderer::Cleanup()
 {
-	if (enableValidationLayers)
+	if (ENABLE_VALIDATION_LAYERS)
 	{
 		DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
 		m_debugMessenger = nullptr;
@@ -62,7 +62,7 @@ VulkanRenderer::CreateInstance()
 	// Check if validation layers are available
 	{
 		std::string unSupValLayer{};
-		if (enableValidationLayers  && !TryCheckValidationLayerSupport(unSupValLayer))
+		if (ENABLE_VALIDATION_LAYERS  && !TryCheckValidationLayerSupport(unSupValLayer))
 		{
 			throw std::runtime_error("Validation layer not supported: " + unSupValLayer);
 		}
@@ -97,7 +97,7 @@ VulkanRenderer::CreateInstance()
 
 	// Validation layer information
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-	if (enableValidationLayers)
+	if (ENABLE_VALIDATION_LAYERS)
 	{
 		createInfo.enabledLayerCount   = static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -122,7 +122,7 @@ VulkanRenderer::CreateInstance()
 void
 VulkanRenderer::CreateDebugMessenger()
 {
-	if (!enableValidationLayers) return;
+	if (!ENABLE_VALIDATION_LAYERS) return;
 
 	VkDebugUtilsMessengerCreateInfoEXT createInfo {};
 	PopulateDebugMessengerCreateInfo(createInfo);
@@ -217,7 +217,7 @@ VulkanRenderer::GetRequiredExtensions()
 	}
 
 	// Enable the debug extension if validation layers are enabled
-	if (enableValidationLayers)
+	if (ENABLE_VALIDATION_LAYERS)
 	{
 		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}

@@ -1,6 +1,12 @@
 #ifndef VULKANRENDERER_H
 #define VULKANRENDERER_H
 
+#ifdef NDEBUG
+	#define ENABLE_VALIDATION_LAYERS false
+#else
+	#define ENABLE_VALIDATION_LAYERS true
+#endif
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -44,13 +50,6 @@ private:
 	// ======================================================================================================================
 	// ============================================ Vulkan Constants ========================================================
 	// ======================================================================================================================
-
-	/** @brief The validation layers to enable */
-#ifdef NDEBUG
-	constexpr static bool enableValidationLayers = false;
-#else
-	constexpr static bool enableValidationLayers = true;
-#endif
 
 	/** @brief The validation layers to enable */
 	const std::vector<const char*> validationLayers =
