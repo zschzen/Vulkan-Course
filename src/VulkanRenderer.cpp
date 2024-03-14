@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include "VulkanValidation.h"
+
 
 VulkanRenderer::VulkanRenderer() = default;
 
@@ -20,7 +22,7 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 	try
 	{
 		CreateInstance();
-		CreateDebugMessenger();
+		CreateDebugMessenger(m_instance, m_debugMessenger);
 		CreateSurface();
 		GetPhysicalDevice();
 		CreateLogicalDevice();
@@ -116,21 +118,6 @@ VulkanRenderer::CreateInstance()
 	if (result != VkResult::VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create Vulkan Instance");
-	}
-}
-
-void
-VulkanRenderer::CreateDebugMessenger()
-{
-	if (!ENABLE_VALIDATION_LAYERS) return;
-
-	VkDebugUtilsMessengerCreateInfoEXT createInfo {};
-	PopulateDebugMessengerCreateInfo(createInfo);
-
-	VkResult result = CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger);
-	if (result != VkResult::VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to set up debug messenger");
 	}
 }
 
