@@ -4,12 +4,13 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <iostream>
+#include <algorithm>
 #include <stdexcept>
+#include <iostream>
+#include <limits>
 #include <vector>
 #include <set>
 
-#include "VulkanValidation.h"
 #include "Utilities.h"
 
 
@@ -24,6 +25,7 @@ public:
 
 	VulkanRenderer();
 	~VulkanRenderer();
+
 
 	// ======================================================================================================================
 	// ============================================ Vulkan Base Functions ===================================================
@@ -43,11 +45,18 @@ public:
 private:
 
 	// ======================================================================================================================
-	// ============================================ Vulkan Variables ========================================================
+	// ============================================ GLFW Components =========================================================
 	// ======================================================================================================================
 
 	/** @brief The window to render to */
 	GLFWwindow *m_window  {nullptr};
+
+
+	// ======================================================================================================================
+	// ============================================ Vulkan Components =======================================================
+	// ======================================================================================================================
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++ Main Components ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	/** @brief The debug messenger callback */
 	VkDebugUtilsMessengerEXT m_debugMessenger {nullptr};
@@ -57,6 +66,9 @@ private:
 
 	/** @brief The Vulkan surface */
 	VkSurfaceKHR m_surface {nullptr};
+
+	VkSwapchainKHR m_swapchain {nullptr};
+	std::vector<swapchainImage_t> m_swapChainImages {};
 
 	/**
 	 * @struct MainDevice
@@ -72,6 +84,11 @@ private:
 	VkQueue m_graphicsQueue {};     // Queue that handles the passing of command buffers for rendering
 	VkQueue m_presentationQueue {}; // Queue that handles presentation of images to the surface
 
+	// ++++++++++++++++++++++++++++++++++++++++++++++ Utility Components +++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	VkFormat m_swapChainImageFormat;
+	VkExtent2D m_swapChainExtent;
+
 
 	// ======================================================================================================================
 	// ============================================ Vulkan Functions ========================================================
@@ -85,11 +102,14 @@ private:
 	/** @brief Create logical device */
 	void CreateLogicalDevice();
 
-	/** @brief Create the debug messenger */
+	/** @brief Create the debug messenger to enable validation layers */
 	void CreateDebugMessenger();
 
 	/** @brief Create the surface to render to */
 	void CreateSurface();
+
+	/** @brief Create the swap chain */
+	void CreateSwapChain();
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Get Functions ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -103,7 +123,9 @@ private:
 	void GetPhysicalDevice();
 
 
-	// ++++++++++++++++++++++++++++++++++++++++++++++ Support Functions +++++++++++++++++++++++++++++++++++++++++++++++++++
+	// ======================================================================================================================
+	// ============================================ Vulkan Support Functions ================================================
+	// ======================================================================================================================
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Check Functions +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -154,6 +176,45 @@ private:
 	 * @return The swap chain details
 	 */
 	swapChainDetails_t GetSwapChainDetails(VkPhysicalDevice device);
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++ Choose Functions ++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	/**
+	 * @brief Choose the best swap surface format. Subject to change
+	 *
+	 * @param InFormats The available formats
+	 * @return The best surface format
+	 */
+	[[nodiscard]] VkSurfaceFormatKHR ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &InFormats);
+
+	/**
+	 * @brief Choose the best presentation mode. Subject to change
+	 *
+	 * @param InPresentationModes The available presentation modes
+	 * @return The best presentation mode
+	 */
+	[[nodiscard]] VkPresentModeKHR ChooseBestPresentationMode(const std::vector<VkPresentModeKHR> &InPresentationModes);
+
+	/**
+	 * @brief Choose the swap extent
+	 *
+	 * @param InSurfaceCapabilities The surface capabilities
+	 * @return The swap extent
+	 */
+	[[nodiscard]] VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &InSurfaceCapabilities);
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++++ Create Functions ++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	/**
+	 * @brief Create an image view
+	 *
+	 * @param image The image to create the view for
+	 * @param format The format of the image
+	 * @param aspectFlags The aspect flags of the image
+	 * @return The image view
+	 */
+	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+
 };
 
 #endif //VULKANRENDERER_H
