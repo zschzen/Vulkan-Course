@@ -2,8 +2,6 @@
 
 #include <cstring>
 
-#include "VulkanValidation.h"
-
 
 VulkanRenderer::VulkanRenderer() = default;
 
@@ -22,7 +20,7 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 	try
 	{
 		CreateInstance();
-		CreateDebugMessenger(m_instance, m_debugMessenger);
+		CreateDebugMessenger();
 		CreateSurface();
 		GetPhysicalDevice();
 		CreateLogicalDevice();
@@ -181,6 +179,22 @@ VulkanRenderer::CreateLogicalDevice()
 	// Queues are created at the same time as the device
 	vkGetDeviceQueue(m_mainDevice.logicalDevice, indices.graphicsFamily, 0, &m_graphicsQueue);
 	vkGetDeviceQueue(m_mainDevice.logicalDevice, indices.presentationFamily, 0, &m_presentationQueue);
+}
+
+void
+VulkanRenderer::CreateDebugMessenger()
+{
+	if (!ENABLE_VALIDATION_LAYERS) return;
+
+	// Create the debug messenger
+	VkDebugUtilsMessengerCreateInfoEXT createInfo {};
+	PopulateDebugMessengerCreateInfo(createInfo);
+
+	// Create the debug messenger
+	if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to set up debug messenger");
+	}
 }
 
 std::vector<const char*>

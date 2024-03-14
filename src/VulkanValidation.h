@@ -16,6 +16,7 @@
 #endif
 
 
+
 // ======================================================================================================================
 // ============================================ Vulkan Constants ========================================================
 // ======================================================================================================================
@@ -28,16 +29,17 @@ const std::vector<const char*> validationLayers =
 	//"VK_LAYER_LUNARG_api_dump",
 };
 
+
 // ======================================================================================================================
-// ============================================ Debug Callback ===========================================================
+// ============================================ Debug Callback ==========================================================
 // ======================================================================================================================
 
 /** @brief The debug callback function */
-static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT messageType,
-		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData)
+static VKAPI_ATTR VkBool32 VKAPI_CALL
+DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+			  VkDebugUtilsMessageTypeFlagsEXT messageType,
+			  const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+			  void* pUserData)
 {
 	// Unused parameters
 	(void) messageType; (void) pUserData;
@@ -46,11 +48,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 	std::string severity {};
 	switch (messageSeverity)
 	{
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT  : severity = "Verbose";  break;
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT     : severity = "Info";     break;
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT  : severity = "Warning";  break;
-	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT    : severity = "Error";    break;
-	default: severity = "Unknown"; break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT  : severity = "Verbose";  break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT     : severity = "Info";     break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT  : severity = "Warning";  break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT    : severity = "Error";    break;
+		default: severity = "Unknown"; break;
 	}
 
 	// Print the message
@@ -60,11 +62,13 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 	return VK_FALSE;
 }
 
+
 // ======================================================================================================================
 // ============================================ Debug Messenger =========================================================
 // ======================================================================================================================
 
-void
+/** @brief Populates the debug messenger create info */
+static void
 PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo)
 {
 	createInfo =
@@ -89,7 +93,8 @@ PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo)
 	};
 }
 
-VkResult
+/** @brief Creates the debug messenger */
+static VkResult
 CreateDebugUtilsMessengerEXT(VkInstance instance,
 							 const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
 							 const VkAllocationCallbacks *pAllocator,
@@ -106,29 +111,14 @@ CreateDebugUtilsMessengerEXT(VkInstance instance,
 	}
 }
 
-void
-CreateDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT &debugMessenger)
-{
-	if (!ENABLE_VALIDATION_LAYERS) return;
-
-	// Create the debug messenger
-	VkDebugUtilsMessengerCreateInfoEXT createInfo {};
-	PopulateDebugMessengerCreateInfo(createInfo);
-
-	// Create the debug messenger
-	if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to set up debug messenger");
-	}
-}
 
 // ======================================================================================================================
-// ============================================ Destroy Debug Messenger ==================================================
+// ============================================ Destroy Debug Messenger =================================================
 // ======================================================================================================================
 
-void
-DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-							  const VkAllocationCallbacks* pAllocator)
+/** @brief Destroys the debug messenger */
+static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+										  const VkAllocationCallbacks *pAllocator)
 {
 	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != nullptr)

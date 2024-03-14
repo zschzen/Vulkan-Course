@@ -9,6 +9,7 @@
 #include <vector>
 #include <set>
 
+#include "VulkanValidation.h"
 #include "Utilities.h"
 
 
@@ -83,6 +84,9 @@ private:
 
 	/** @brief Create logical device */
 	void CreateLogicalDevice();
+
+	/** @brief Create the debug messenger */
+	void CreateDebugMessenger();
 
 	/** @brief Create the surface to render to */
 	void CreateSurface();
