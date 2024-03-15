@@ -9,12 +9,18 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#ifdef NDEBUG
-	#define ENABLE_VALIDATION_LAYERS false
-#else
-	#define ENABLE_VALIDATION_LAYERS true
-#endif
 
+// ======================================================================================================================
+// ============================================ Macros ==================================================================
+// ======================================================================================================================
+
+#ifndef ENABLE_VALIDATION_LAYERS
+	#ifdef NDEBUG
+		#define ENABLE_VALIDATION_LAYERS false
+	#else
+		#define ENABLE_VALIDATION_LAYERS true
+	#endif
+#endif
 
 
 // ======================================================================================================================
@@ -34,7 +40,10 @@ const std::vector<const char*> validationLayers =
 // ============================================ Debug Callback ==========================================================
 // ======================================================================================================================
 
-/** @brief The debug callback function */
+/**
+ * @brief The debug callback function
+ * TODO: Implement a logging system, like spdlog
+ */
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 			  VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -45,18 +54,34 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	(void) messageType; (void) pUserData;
 
 	// Get the severity(Verbose, Info, Warning, Error)
-	std::string severity {};
+	std::string   severity      {};
+	std::ostream* output_stream {};
 	switch (messageSeverity)
 	{
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT  : severity = "Verbose";  break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT     : severity = "Info";     break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT  : severity = "Warning";  break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT    : severity = "Error";    break;
-		default: severity = "Unknown"; break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT  :
+			severity = "VERBOSE";
+			output_stream = &std::cout;
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT     :
+			severity = "INFO";
+			output_stream = &std::cout;
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT  :
+			severity = "WARNING";
+			output_stream = &std::cerr;
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT    :
+			severity = "ERROR";
+			output_stream = &std::cerr;
+			break;
+		default:
+			severity = "UNKNOWN";
+			output_stream = &std::cerr;
+			break;
 	}
 
 	// Print the message
-	std::cerr << "[Validation Layer] [" << severity << "]: " << pCallbackData->pMessage << std::endl;
+	*output_stream << "[Validation Layer] [" << severity << "]: " << pCallbackData->pMessage << std::endl;
 
 	// Return false to indicate that the Vulkan call should be aborted
 	return VK_FALSE;
