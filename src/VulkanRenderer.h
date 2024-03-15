@@ -68,8 +68,17 @@ private:
 	VkSurfaceKHR m_surface                    {nullptr};
 
 	VkSwapchainKHR m_swapchain                {nullptr};
+
 	std::vector<swapchainImage_t> m_swapChainImages { };
 	std::vector<VkFramebuffer> m_swapChainFramebuffers { };
+	std::vector<VkCommandBuffer> m_commandBuffers { };
+
+	// +++++++++++++++++++++++++++++++++++++++++++++++ Pools +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	/** @brief The command pool */
+	VkCommandPool m_graphicsCommandPool {nullptr};
+
+	// +++++++++++++++++++++++++++++++++++++++++++++++ Device Components +++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	/**
 	 * @struct MainDevice
@@ -133,6 +142,12 @@ private:
 
 	/** @brief Create the frame buffers */
 	void CreateFramebuffers();
+
+	/** @brief Create the command pool */
+	void CreateCommandPool();
+
+	/** @brief Create the command buffers */
+	void CreateCommandBuffers();
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Get Functions ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

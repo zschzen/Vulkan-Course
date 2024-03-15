@@ -32,6 +32,8 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 		CreateRenderPass();
 		CreateGraphicsPipeline();
 		CreateFramebuffers();
+		CreateCommandPool();
+		CreateCommandBuffers();
 	}
 	catch (const std::runtime_error &e)
 	{
@@ -46,14 +48,15 @@ void
 VulkanRenderer::Cleanup()
 {
 	// Clean up the swap chain frame buffers
-	for (auto &framebuffer : m_swapChainFramebuffers)
+	vkDestroyCommandPool(m_mainDevice.logicalDevice, m_graphicsCommandPool, nullptr);
+	for (const auto &framebuffer : m_swapChainFramebuffers)
 	{
 		if (framebuffer != VK_NULL_HANDLE)
 		{
 			vkDestroyFramebuffer(m_mainDevice.logicalDevice, framebuffer, nullptr);
-			framebuffer = VK_NULL_HANDLE;
 		}
 	}
+	m_swapChainFramebuffers.clear();
 
 	// Destroy graphics (pipeline, pipeline layout, render pass)
 	vkDestroyPipeline(m_mainDevice.logicalDevice, m_graphicsPipeline, nullptr);
@@ -737,6 +740,57 @@ VulkanRenderer::CreateFramebuffers()
 	}
 }
 
+void
+VulkanRenderer::CreateCommandPool()
+{
+	// Get the queue family indices for the physical device
+	const queueFamilyIndices_t queueFamilyIndices = GetQueueFamilies(m_mainDevice.physicalDevice);
+
+	VkCommandPoolCreateInfo poolCreateInfo =
+	{
+		.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.queueFamilyIndex = static_cast<uint32_t>(queueFamilyIndices.graphicsFamily),  // Queue Family type that buffers from this command pool will use
+	};
+
+	// Create a Graphics Queue Family Command Pool
+	if (vkCreateCommandPool(m_mainDevice.logicalDevice, &poolCreateInfo, nullptr, &m_graphicsCommandPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create a command pool!");
+	}
+}
+
+void
+VulkanRenderer::CreateCommandBuffers()
+{
+	// Resize command buffer count to have one for each framebuffer
+	m_commandBuffers.resize(m_swapChainFramebuffers.size());
+
+	VkCommandBufferAllocateInfo commandBufferAllocInfo =
+	{
+		.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.pNext              = nullptr,                                        // Pointer to extension-related structures
+		.commandPool        = m_graphicsCommandPool,                          // Command pool to allocate from
+		.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // Level of the command buffer
+		.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size())  // Number of command buffers to allocate
+	};
+
+	/**
+	 * Levels of Command Buffers:
+	 *
+	 * 1. Primary: Can be submitted to a queue for execution, but cannot be called from other command buffers.
+	 *
+	 * 2. Secondary: Cannot be submitted directly, but can be called from primary command buffers.
+	 *
+	 * Usage:
+	 * 	vkCommandExecuteCommands(buffer) : Execute secondary command buffers from primary command buffer.
+	 */
+
+	if (vkAllocateCommandBuffers(m_mainDevice.logicalDevice, &commandBufferAllocInfo, m_commandBuffers.data()) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate command buffers!");
+	}
+}
+
 
 std::vector<const char*>
 VulkanRenderer::GetRequiredExtensions()
@@ -956,6 +1010,7 @@ VulkanRenderer::CheckDeviceSuitable(VkPhysicalDevice device)
 		  //deviceFeatures.geometryShader
 }
 
+// TODO: Cache the queue families
 queueFamilyIndices_t
 VulkanRenderer::GetQueueFamilies(VkPhysicalDevice device)
 {
