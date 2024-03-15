@@ -69,6 +69,7 @@ private:
 
 	VkSwapchainKHR m_swapchain                {nullptr};
 	std::vector<swapchainImage_t> m_swapChainImages { };
+	std::vector<VkFramebuffer> m_swapChainFramebuffers { };
 
 	/**
 	 * @struct MainDevice
@@ -129,6 +130,9 @@ private:
 
 	/** @brief Create the Graphics Pipeline */
 	void CreateGraphicsPipeline();
+
+	/** @brief Create the frame buffers */
+	void CreateFramebuffers();
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Get Functions ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

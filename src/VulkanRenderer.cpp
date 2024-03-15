@@ -31,6 +31,7 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 		CreateSwapChain();
 		CreateRenderPass();
 		CreateGraphicsPipeline();
+		CreateFramebuffers();
 	}
 	catch (const std::runtime_error &e)
 	{
@@ -44,40 +45,50 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 void
 VulkanRenderer::Cleanup()
 {
-    // Destroy graphics (pipeline, pipeline layout, render pass)
-    vkDestroyPipeline(m_mainDevice.logicalDevice, m_graphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(m_mainDevice.logicalDevice, m_pipelineLayout, nullptr);
-    vkDestroyRenderPass(m_mainDevice.logicalDevice, m_renderPass, nullptr);
+	// Clean up the swap chain frame buffers
+	for (auto &framebuffer : m_swapChainFramebuffers)
+	{
+		if (framebuffer != VK_NULL_HANDLE)
+		{
+			vkDestroyFramebuffer(m_mainDevice.logicalDevice, framebuffer, nullptr);
+			framebuffer = VK_NULL_HANDLE;
+		}
+	}
 
-    // Destroy the image views and the swap chain
-    for (const auto &image : m_swapChainImages)
-    {
-        vkDestroyImageView(m_mainDevice.logicalDevice, image.imageView, nullptr);
-    }
-    vkDestroySwapchainKHR(m_mainDevice.logicalDevice, m_swapchain, nullptr);
+	// Destroy graphics (pipeline, pipeline layout, render pass)
+	vkDestroyPipeline(m_mainDevice.logicalDevice, m_graphicsPipeline, nullptr);
+	vkDestroyPipelineLayout(m_mainDevice.logicalDevice, m_pipelineLayout, nullptr);
+	vkDestroyRenderPass(m_mainDevice.logicalDevice, m_renderPass, nullptr);
 
-    // Clear swap chain images
-    m_swapChainImages.clear();
-    m_swapchain = nullptr;
+	// Destroy the image views and the swap chain
+	for (const auto &image : m_swapChainImages)
+	{
+		vkDestroyImageView(m_mainDevice.logicalDevice, image.imageView, nullptr);
+	}
+	vkDestroySwapchainKHR(m_mainDevice.logicalDevice, m_swapchain, nullptr);
 
-    // Destroy the logical device
-    vkDestroyDevice(m_mainDevice.logicalDevice, nullptr);
-    m_mainDevice = {nullptr};
+	// Clear swap chain images
+	m_swapChainImages.clear();
+	m_swapchain = nullptr;
 
-    // Destroy the surface
-    vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-    m_surface = nullptr;
+	// Destroy the logical device
+	vkDestroyDevice(m_mainDevice.logicalDevice, nullptr);
+	m_mainDevice = {nullptr};
 
-    // Destroy debug callback
-    if (ENABLE_VALIDATION_LAYERS)
-    {
-        DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
-        m_debugMessenger = nullptr;
-    }
+	// Destroy the surface
+	vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+	m_surface = nullptr;
 
-    // Destroy the Vulkan Instance
-    vkDestroyInstance(m_instance, nullptr);
-    m_instance = nullptr;
+	// Destroy debug callback
+	if (ENABLE_VALIDATION_LAYERS)
+	{
+		DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
+		m_debugMessenger = nullptr;
+	}
+
+	// Destroy the Vulkan Instance
+	vkDestroyInstance(m_instance, nullptr);
+	m_instance = nullptr;
 }
 
 void
@@ -690,6 +701,40 @@ VulkanRenderer::CreateGraphicsPipeline()
 	// Destroy shader modules
 	vkDestroyShaderModule(m_mainDevice.logicalDevice, fragShaderModule, nullptr);
 	vkDestroyShaderModule(m_mainDevice.logicalDevice, vertexShaderModule, nullptr);
+}
+
+void
+VulkanRenderer::CreateFramebuffers()
+{
+	// Resize the framebuffer count to the swap chain image count
+	m_swapChainFramebuffers.resize(m_swapChainImages.size());
+
+	// Create a framebuffer for each swap chain image
+	for (size_t i = 0; i < m_swapChainFramebuffers.size(); ++i)
+	{
+		// TIP: The attachments here are the same ones were just looking in the render pass.
+		//		See CreateRenderPass() for those attachments.
+		std::array<VkImageView, 1> attachments =
+		{
+			m_swapChainImages[i].imageView
+		};
+
+		VkFramebufferCreateInfo framebufferCreateInfo =
+		{
+			.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+			.renderPass      = m_renderPass,                               // Render Pass layout the framebuffer will be used with
+			.attachmentCount = static_cast<uint32_t>(attachments.size()),  // Number of attachments
+			.pAttachments    = attachments.data(),                         // Attachments to be used by the framebuffer (Actually the things that are being attached, not the ones from render pass)
+			.width           = m_swapChainExtent.width,                    // Width of the framebuffer
+			.height          = m_swapChainExtent.height,                   // Height of the framebuffer
+			.layers          = 1                                           // Number of layers to be used by the framebuffer
+		};
+
+		if (vkCreateFramebuffer(m_mainDevice.logicalDevice, &framebufferCreateInfo, nullptr, &m_swapChainFramebuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create a Framebuffer!");
+		}
+	}
 }
 
 
