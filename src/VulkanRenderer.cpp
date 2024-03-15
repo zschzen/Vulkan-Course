@@ -678,21 +678,21 @@ VulkanRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFla
 		.viewType         = VK_IMAGE_VIEW_TYPE_2D,                        // Type of image (1D, 2D, 3D, Cube, etc)
 		.format           = format,                                       // Format of the image data
 		.components       =                                               // Allows for swizzling of the color channels
-			{
-				// some_image.rgba = some_image.bgra
-				.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-				.g = VK_COMPONENT_SWIZZLE_IDENTITY,
-				.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-				.a = VK_COMPONENT_SWIZZLE_IDENTITY
-			},
+		{
+			// some_image.rgba = some_image.bgra
+			.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+			.g = VK_COMPONENT_SWIZZLE_IDENTITY,
+			.b = VK_COMPONENT_SWIZZLE_IDENTITY,
+			.a = VK_COMPONENT_SWIZZLE_IDENTITY
+		},
 		.subresourceRange =                                               // What part of the image to view
-			{
-				.aspectMask     = aspectFlags,                            // Which aspect of the image to view (e.g. COLOR_BIT for viewing color)
-				.baseMipLevel   = 0,                                      // Start mipmap level to view from
-				.levelCount     = 1,                                      // Number of mipmap levels to view
-				.baseArrayLayer = 0,                                      // Start array level to view from
-				.layerCount     = 1                                       // Number of array levels to view
-			}
+		{
+			.aspectMask     = aspectFlags,                            // Which aspect of the image to view (e.g. COLOR_BIT for viewing color)
+			.baseMipLevel   = 0,                                      // Start mipmap level to view from
+			.levelCount     = 1,                                      // Number of mipmap levels to view
+			.baseArrayLayer = 0,                                      // Start array level to view from
+			.layerCount     = 1                                       // Number of array levels to view
+		}
 	};
 
 	// Create image view and return it
