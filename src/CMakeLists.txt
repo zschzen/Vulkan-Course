@@ -21,4 +21,11 @@ set_target_properties(VulkanCourse PROPERTIES
     CXX_EXTENSIONS OFF
 )
 
+# Copy Assets to build directory
+add_custom_command(TARGET VulkanCourse POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/Assets
+    $<TARGET_FILE_DIR:VulkanCourse>/Assets
+)
+
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${VULKAN_COURSE_SOURCE_FILES} ${VULKAN_COURSE_HEADER_FILES})

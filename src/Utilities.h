@@ -1,6 +1,8 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
+#include <fstream>
+
 const std::vector<const char *> deviceExtensions =
 {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -44,5 +46,39 @@ typedef struct swapchainImage_t
 	VkImage     image;
 	VkImageView imageView;
 } swapchainImage_t;
+
+
+// ++++++++++++++++++++++++++++++++++++++++++++++ File Functions +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+/**
+ * @brief Read a file and return the contents
+ *
+ * @param filename The name of the file to read
+ * @return The contents of the file
+ */
+[[nodiscard]]
+inline std::vector<char>
+ReadFile(const std::string &filename)
+{
+	// Open the file, and set the file pointer to the end of the file
+	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+	// Check if the file is open
+	if (!file.is_open()) throw std::runtime_error("Failed to open file: " + filename);
+
+	// Get the file size
+	size_t fileSize = static_cast<size_t>(file.tellg());
+	std::vector<char> buffer(fileSize);
+
+	// Go to the start of the file
+	file.seekg(0);
+
+	// Read the file into the buffer
+	file.read(buffer.data(), static_cast<std::streamsize>(fileSize));
+
+	// Close the file and return the buffer
+	file.close();
+	return buffer;
+}
 
 #endif //UTILITIES_H
