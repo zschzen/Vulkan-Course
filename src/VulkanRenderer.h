@@ -62,13 +62,13 @@ private:
 	VkDebugUtilsMessengerEXT m_debugMessenger {nullptr};
 
 	/** @brief The Vulkan instance */
-	VkInstance m_instance {nullptr};
+	VkInstance m_instance                     {nullptr};
 
 	/** @brief The Vulkan surface */
-	VkSurfaceKHR m_surface {nullptr};
+	VkSurfaceKHR m_surface                    {nullptr};
 
-	VkSwapchainKHR m_swapchain {nullptr};
-	std::vector<swapchainImage_t> m_swapChainImages {};
+	VkSwapchainKHR m_swapchain                {nullptr};
+	std::vector<swapchainImage_t> m_swapChainImages { };
 
 	/**
 	 * @struct MainDevice
@@ -80,14 +80,27 @@ private:
 		VkDevice          logicalDevice;     // Logical device (application's view of the physical device) that Vulkan will use
 	} m_mainDevice {};
 
+	// ++++++++++++++++++++++++++++++++++++++++++++++ Queues +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 	// Handles to values. Don't actually hold values
-	VkQueue m_graphicsQueue {};     // Queue that handles the passing of command buffers for rendering
-	VkQueue m_presentationQueue {}; // Queue that handles presentation of images to the surface
+	VkQueue m_graphicsQueue     { };     // Queue that handles the passing of command buffers for rendering
+	VkQueue m_presentationQueue { }; // Queue that handles presentation of images to the surface
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++ Graphics Pipeline +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	/** @brief The graphics pipeline */
+	VkPipeline m_graphicsPipeline     {nullptr};
+
+	/** @brief The pipeline layout */
+	VkPipelineLayout m_pipelineLayout {nullptr};
+
+	/** @brief The render pass */
+	VkRenderPass m_renderPass         {nullptr};
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Utility Components +++++++++++++++++++++++++++++++++++++++++++++++++++
 
-	VkFormat m_swapChainImageFormat;
-	VkExtent2D m_swapChainExtent;
+	VkFormat   m_swapChainImageFormat { };
+	VkExtent2D m_swapChainExtent      { };
 
 
 	// ======================================================================================================================
@@ -110,6 +123,12 @@ private:
 
 	/** @brief Create the swap chain */
 	void CreateSwapChain();
+
+	/** @brief Create the render pass */
+	void CreateRenderPass();
+
+	/** @brief Create the Graphics Pipeline */
+	void CreateGraphicsPipeline();
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Get Functions ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -213,7 +232,15 @@ private:
 	 * @param aspectFlags The aspect flags of the image
 	 * @return The image view
 	 */
-	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+	VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
+
+	/**
+	 * @brief Create a shader module
+	 *
+	 * @param code The code of the shader
+	 * @return The shader module
+	 */
+	VkShaderModule CreateShaderModule(const std::vector<char> &code) const;
 
 };
 
