@@ -7,10 +7,7 @@
 
 VulkanRenderer::VulkanRenderer() = default;
 
-VulkanRenderer::~VulkanRenderer()
-{
-	Cleanup();
-}
+VulkanRenderer::~VulkanRenderer() { Cleanup(); }
 
 
 
@@ -21,19 +18,26 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 
 	try
 	{
+		// Instance Creation
 		CreateInstance();
 		CreateDebugMessenger();
 		CreateSurface();
 
+		// Device Setup
 		GetPhysicalDevice();
 		CreateLogicalDevice();
 
+		// Swap Chain Creation
 		CreateSwapChain();
 		CreateRenderPass();
 		CreateGraphicsPipeline();
 		CreateFramebuffers();
+
+		// Command Pool and Buffer Setup
 		CreateCommandPool();
 		CreateCommandBuffers();
+
+		// Command Recording
 		RecordCommands();
 	}
 	catch (const std::runtime_error &e)
@@ -229,9 +233,7 @@ VulkanRenderer::CreateDebugMessenger()
 void
 VulkanRenderer::CreateSurface()
 {
-	VkResult result = glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface);
-
-	if (result != VkResult::VK_SUCCESS)
+	if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VkResult::VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create Surface!");
 	}
