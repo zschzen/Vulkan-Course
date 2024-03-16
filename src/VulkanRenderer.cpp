@@ -34,6 +34,7 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 		CreateFramebuffers();
 		CreateCommandPool();
 		CreateCommandBuffers();
+		RecordCommands();
 	}
 	catch (const std::runtime_error &e)
 	{
@@ -749,6 +750,7 @@ VulkanRenderer::CreateCommandPool()
 	VkCommandPoolCreateInfo poolCreateInfo =
 	{
 		.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,           // Allow the buffer to be rerecorded
 		.queueFamilyIndex = static_cast<uint32_t>(queueFamilyIndices.graphicsFamily),  // Queue Family type that buffers from this command pool will use
 	};
 
@@ -789,6 +791,99 @@ VulkanRenderer::CreateCommandBuffers()
 	{
 		throw std::runtime_error("Failed to allocate command buffers!");
 	}
+}
+
+void
+VulkanRenderer::RecordCommands()
+{
+	// Command buffer details
+	VkCommandBufferBeginInfo bufferBeginInfo =
+	{
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			.pNext = nullptr,                                       // Pointer to extension-related structures
+			.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,  // Buffer can be resubmitted when it has already been submitted and is awaiting execution
+			.pInheritanceInfo = nullptr                             // Secondary command buffer details
+	};
+
+	std::array<VkClearValue, 1> clearValues =
+	{
+		{
+			{
+				.color = {0.16F, 0.16F, 0.21F, 1.0F}     // Dracula Background Colour
+			}
+		}
+	};
+
+	// Info about how to begin each render pass (only needed for graphical applications)
+	VkRenderPassBeginInfo renderPassBeginInfo =
+	{
+		.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.renderPass        = m_renderPass,                               // Render Pass to begin recording commands for
+		.renderArea        =                                             // Size of region to render to (starting point)
+		{
+			.offset = { 0, 0 },                                          // Offset to start rendering at (in pixels)
+			.extent = m_swapChainExtent                                  // Extent to render
+		},
+		.clearValueCount   = static_cast<uint32_t>(clearValues.size()),  // Number of clear values to clear the attachments
+		.pClearValues      = clearValues.data()                          // Clear values to use for clear the attachments
+	};
+
+	for (size_t i = 0; i < m_commandBuffers.size(); ++i)
+	{
+		// Framebuffer to use in the render pass
+		renderPassBeginInfo.framebuffer = m_swapChainFramebuffers[i];
+
+
+		// Start recording commands to the command buffer
+		if(vkBeginCommandBuffer(m_commandBuffers[i], &bufferBeginInfo) != VK_SUCCESS)
+		{
+			throw std::runtime_error(&"Failed to start recording a command buffer: " [i]);
+		}
+
+
+			// ------------------------------------- Begin the render pass --------------------------------------
+			// Begin the render pass
+			//	- VK_SUBPASS_CONTENTS_INLINE: All the render commands will be embedded in the primary command buffer. Will be inlined.
+			//	- VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS: The render commands will be executed from secondary command buffers.
+			vkCmdBeginRenderPass(m_commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+
+				// ------- Viewport -------
+				VkViewport viewport =
+				{
+					.x = 0.0f,
+					.y = 0.0f,
+					.width = (float)m_swapChainExtent.width,
+					.height = (float)m_swapChainExtent.height,
+					.minDepth = 0.0f,
+					.maxDepth = 1.0f
+				};
+				vkCmdSetViewport(m_commandBuffers[i], 0, 1, &viewport);
+
+				// ------- Scissor -------
+				VkRect2D scissor = {
+						.offset = {0, 0},
+						.extent = m_swapChainExtent
+				};
+				vkCmdSetScissor(m_commandBuffers[i], 0, 1, &scissor);
+
+				// ------- Bind Pipeline -------
+				vkCmdBindPipeline(m_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
+
+				// ------- Draw -------
+				vkCmdDraw(m_commandBuffers[i], 3, 1, 0, 0);
+
+
+			// End the render pass
+			vkCmdEndRenderPass(m_commandBuffers[i]);
+
+		if(vkEndCommandBuffer(m_commandBuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error(&"Failed to stop recording a command buffer: " [i]);
+		}
+	}
+
+	vkBeginCommandBuffer(m_commandBuffers[0], &bufferBeginInfo);
 }
 
 

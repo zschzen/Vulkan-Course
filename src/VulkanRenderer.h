@@ -149,6 +149,11 @@ private:
 	/** @brief Create the command buffers */
 	void CreateCommandBuffers();
 
+	// ++++++++++++++++++++++++++++++++++++++++++++++ Record Functions +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	/** @brief Record the command buffers */
+	void RecordCommands();
+
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Get Functions ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	/**
