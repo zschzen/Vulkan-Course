@@ -104,18 +104,20 @@ private:
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Graphics Pipeline +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	/** @brief The graphics pipeline */
-	VkPipeline m_graphicsPipeline     {nullptr};
+	VkPipeline      m_graphicsPipeline    {nullptr};
 
 	/** @brief The pipeline layout */
-	VkPipelineLayout m_pipelineLayout {nullptr};
+	VkPipelineLayout m_pipelineLayout     {nullptr};
 
 	/** @brief The render pass */
-	VkRenderPass m_renderPass         {nullptr};
+	VkRenderPass     m_renderPass         {nullptr};
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Utility Components +++++++++++++++++++++++++++++++++++++++++++++++++++
 
-	VkFormat   m_swapChainImageFormat { };
-	VkExtent2D m_swapChainExtent      { };
+	VkFormat         m_swapChainImageFormat { };
+	VkExtent2D       m_swapChainExtent      { };
+
+	function_queue_t m_mainDeletionQueue    { };
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Sync Components +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

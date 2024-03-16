@@ -122,61 +122,12 @@ VulkanRenderer::Draw()
 void
 VulkanRenderer::Cleanup()
 {
-	// Wait until no actions being run on device before destroying
+	if (m_mainDeletionQueue.empty()) return;
+
+	// Wait for a logical device to finish before cleanup
 	vkDeviceWaitIdle(m_mainDevice.logicalDevice);
 
-	for (size_t i = 0; i < MAX_FRAME_DRAWS; i++)
-	{
-		vkDestroySemaphore(m_mainDevice.logicalDevice, m_renderFinishedSemaphore[i], nullptr);
-		vkDestroySemaphore(m_mainDevice.logicalDevice, m_imageAvailableSemaphore[i], nullptr);
-		vkDestroyFence(m_mainDevice.logicalDevice, m_drawFences[i], nullptr);
-	}
-	m_renderFinishedSemaphore.clear();
-	m_imageAvailableSemaphore.clear();
-	m_drawFences.clear();
-
-	// Clean up the swap chain frame buffers
-	vkDestroyCommandPool(m_mainDevice.logicalDevice, m_graphicsCommandPool, nullptr);
-	for (const auto &framebuffer : m_swapChainFramebuffers)
-	{
-		vkDestroyFramebuffer(m_mainDevice.logicalDevice, framebuffer, nullptr);
-	}
-	m_swapChainFramebuffers.clear();
-
-	// Destroy graphics (pipeline, pipeline layout, render pass)
-	vkDestroyPipeline(m_mainDevice.logicalDevice, m_graphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(m_mainDevice.logicalDevice, m_pipelineLayout, nullptr);
-	vkDestroyRenderPass(m_mainDevice.logicalDevice, m_renderPass, nullptr);
-
-	// Destroy the image views and the swap chain
-	for (const auto &image : m_swapChainImages)
-	{
-		vkDestroyImageView(m_mainDevice.logicalDevice, image.imageView, nullptr);
-	}
-	vkDestroySwapchainKHR(m_mainDevice.logicalDevice, m_swapchain, nullptr);
-
-	// Clear swap chain images
-	m_swapChainImages.clear();
-	m_swapchain = nullptr;
-
-	// Destroy the logical device
-	vkDestroyDevice(m_mainDevice.logicalDevice, nullptr);
-	m_mainDevice = {nullptr};
-
-	// Destroy the surface
-	vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-	m_surface = nullptr;
-
-	// Destroy debug callback
-	if (ENABLE_VALIDATION_LAYERS)
-	{
-		DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
-		m_debugMessenger = nullptr;
-	}
-
-	// Destroy the Vulkan Instance
-	vkDestroyInstance(m_instance, nullptr);
-	m_instance = nullptr;
+	m_mainDeletionQueue.flush();
 }
 
 void
@@ -239,6 +190,13 @@ VulkanRenderer::CreateInstance()
 	{
 		throw std::runtime_error("Failed to create Vulkan Instance");
 	}
+
+	// Add instance to deletion queue
+	m_mainDeletionQueue.push_function([&]()
+	{
+		vkDestroyInstance(m_instance, nullptr);
+		m_instance = NULL;
+	});
 }
 
 void
@@ -292,6 +250,13 @@ VulkanRenderer::CreateLogicalDevice()
 	// Queues are created at the same time as the device
 	vkGetDeviceQueue(m_mainDevice.logicalDevice, indices.graphicsFamily, 0, &m_graphicsQueue);
 	vkGetDeviceQueue(m_mainDevice.logicalDevice, indices.presentationFamily, 0, &m_presentationQueue);
+
+	// Add logical device to deletion queue
+	m_mainDeletionQueue.push_function([&]()
+	{
+		vkDestroyDevice(m_mainDevice.logicalDevice, nullptr);
+		m_mainDevice.logicalDevice = NULL;
+	});
 }
 
 void
@@ -308,6 +273,13 @@ VulkanRenderer::CreateDebugMessenger()
 	{
 		throw std::runtime_error("Failed to set up debug messenger");
 	}
+
+	// Add to deletion queue
+	m_mainDeletionQueue.push_function([&]()
+	{
+		DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
+		m_debugMessenger = NULL;
+	});
 }
 
 void
@@ -317,6 +289,13 @@ VulkanRenderer::CreateSurface()
 	{
 		throw std::runtime_error("Failed to create Surface!");
 	}
+
+	// Add surface to deletion queue
+	m_mainDeletionQueue.push_function([&]()
+	{
+		vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+		m_surface = NULL;
+	});
 }
 
 void
@@ -412,6 +391,19 @@ VulkanRenderer::CreateSwapChain()
 		// Store image and image view
 		m_swapChainImages.push_back(swapChainImage);
 	}
+
+	// Add swap chain to deletion queue
+	m_mainDeletionQueue.push_function([&]()
+	{
+		for (const auto &image : m_swapChainImages)
+		{
+			vkDestroyImageView(m_mainDevice.logicalDevice, image.imageView, nullptr);
+		}
+		m_swapChainImages.clear();
+
+		vkDestroySwapchainKHR(m_mainDevice.logicalDevice, m_swapchain, nullptr);
+		m_swapchain = NULL;
+	});
 }
 
 void
@@ -520,6 +512,13 @@ VulkanRenderer::CreateRenderPass()
 	{
 		throw std::runtime_error("Failed to create a Render Pass!");
 	}
+
+	// Add to deletion queue
+	m_mainDeletionQueue.push_function([&]()
+	{
+		vkDestroyRenderPass(m_mainDevice.logicalDevice, m_renderPass, nullptr);
+		m_renderPass = NULL;
+	});
 }
 
 void
@@ -787,6 +786,13 @@ VulkanRenderer::CreateGraphicsPipeline()
 	// Destroy shader modules
 	vkDestroyShaderModule(m_mainDevice.logicalDevice, fragShaderModule, nullptr);
 	vkDestroyShaderModule(m_mainDevice.logicalDevice, vertexShaderModule, nullptr);
+
+	// Add pipeline to deletion queue
+	m_mainDeletionQueue.push_function([&]()
+	{
+		vkDestroyPipeline(m_mainDevice.logicalDevice, m_graphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(m_mainDevice.logicalDevice, m_pipelineLayout, nullptr);
+	});
 }
 
 void
@@ -821,6 +827,15 @@ VulkanRenderer::CreateFramebuffers()
 			throw std::runtime_error("Failed to create a Framebuffer!");
 		}
 	}
+
+	// Add framebuffers to deletion queue
+	m_mainDeletionQueue.push_function([&]()
+	{
+		for (const auto &framebuffer : m_swapChainFramebuffers)
+		{
+			vkDestroyFramebuffer(m_mainDevice.logicalDevice, framebuffer, nullptr);
+		}
+	});
 }
 
 void
@@ -841,6 +856,12 @@ VulkanRenderer::CreateCommandPool()
 	{
 		throw std::runtime_error("Failed to create a command pool!");
 	}
+
+	// Add command pool to deletion queue
+	m_mainDeletionQueue.push_function([&]()
+	{
+		vkDestroyCommandPool(m_mainDevice.logicalDevice, m_graphicsCommandPool, nullptr);
+	});
 }
 
 void
@@ -873,12 +894,18 @@ VulkanRenderer::CreateCommandBuffers()
 	{
 		throw std::runtime_error("Failed to allocate command buffers!");
 	}
+
+	// Add command buffers to deletion queue
+	m_mainDeletionQueue.push_function([&]()
+	{
+		vkFreeCommandBuffers(m_mainDevice.logicalDevice, m_graphicsCommandPool, static_cast<uint32_t>(m_commandBuffers.size()), m_commandBuffers.data());
+	});
 }
 
 void
 VulkanRenderer::CreateSemaphores()
 {
-	// Resize the semaphores to fit all of the swap chain images
+	// Resize the semaphores to fit all the swap chain images
 	m_imageAvailableSemaphore.resize(MAX_FRAME_DRAWS);
 	m_renderFinishedSemaphore.resize(MAX_FRAME_DRAWS);
 	m_drawFences.resize(MAX_FRAME_DRAWS);
@@ -913,6 +940,17 @@ VulkanRenderer::CreateSemaphores()
 			throw std::runtime_error("Failed to create a Fence!");
 		}
 	}
+
+	// Add semaphores to deletion queue
+	m_mainDeletionQueue.push_function([&]()
+	{
+		for (size_t i = 0; i < MAX_FRAME_DRAWS; ++i)
+		{
+			vkDestroySemaphore(m_mainDevice.logicalDevice, m_imageAvailableSemaphore[i], nullptr);
+			vkDestroySemaphore(m_mainDevice.logicalDevice, m_renderFinishedSemaphore[i], nullptr);
+			vkDestroyFence(m_mainDevice.logicalDevice, m_drawFences[i], nullptr);
+		}
+	});
 }
 
 

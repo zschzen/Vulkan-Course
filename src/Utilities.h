@@ -1,15 +1,28 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
+#include <deque>
+#include <functional>
 #include <fstream>
+#include <ranges>
 
 
 // ======================================================================================================================
 // ============================================ Macros ==================================================================
 // ======================================================================================================================
 
+#ifndef FORCE_INLINE
+	#if defined(_MSC_VER)
+		#define FORCE_INLINE __forceinline
+	#elif defined(__GNUC__) || defined(__clang__)
+		#define FORCE_INLINE inline __attribute__((always_inline))
+	#else
+		#define FORCE_INLINE inline
+	#endif
+#endif
+
 /** @brief The maximum number of frames that can be in flight */
-const int MAX_FRAME_DRAWS = 3;
+constexpr int MAX_FRAME_DRAWS = 3;
 
 
 // ======================================================================================================================
@@ -64,6 +77,42 @@ typedef struct swapchainImage_t
 	VkImage     image;
 	VkImageView imageView;
 } swapchainImage_t;
+
+
+typedef struct function_queue_t
+{
+	std::deque< std::function<void()> > deque {};
+
+	/** @brief Check if the queue is empty */
+	[[nodiscard]] FORCE_INLINE bool
+	empty() const
+	{
+		return deque.empty();
+	}
+
+	/** @brief Get the size of the queue */
+	template<typename T = size_t>
+	[[nodiscard]] FORCE_INLINE T
+	size() const
+	{
+		return static_cast<T>(deque.size());
+	}
+
+	/** @brief Push a function to the queue */
+	FORCE_INLINE void
+	push_function(std::function<void()>&& function)
+	{
+		deque.push_back(function);
+	}
+
+	/** @brief Flush the function queue */
+	FORCE_INLINE void
+	flush()
+	{
+		for (const auto & it : std::ranges::reverse_view(deque)) (it)();
+		deque.clear();
+	}
+} function_queue_t;
 
 
 // ======================================================================================================================
