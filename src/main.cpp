@@ -11,7 +11,7 @@ VulkanRenderer vulkanRenderer;
 
 
 void
-InitWindow(const std::string &wName = "Test Window", const int width = 800, const int height = 600)
+InitWindow(const std::string &wName = "Vulkan Window", const int width = 800, const int height = 600)
 {
 	if (!glfwInit()) throw std::runtime_error("Failed to initialize GLFW");
 
@@ -26,7 +26,7 @@ int
 main()
 {
 	// Window setup
-	InitWindow("Test Window", 800, 600);
+	InitWindow("Vulkan Window", 800, 600);
 
 	// Try to create Vulkan Instance
 	if (vulkanRenderer.Init(window) != EXIT_SUCCESS) return EXIT_FAILURE;
@@ -36,6 +36,7 @@ main()
 		bool isRunning = true;
 		while (isRunning && !glfwWindowShouldClose(window))
 		{
+			// ----------------- Input ----------------
 			glfwPollEvents();
 
 			if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -43,10 +44,16 @@ main()
 				isRunning = false;
 				glfwSetWindowShouldClose(window, GLFW_TRUE);
 			}
+
+			// ----------------- Update -----------------
+
+			// ----------------- Draw -----------------
+			vulkanRenderer.Draw();
 		}
 	}
 
 	// Clean up
+	vulkanRenderer.Cleanup();
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;

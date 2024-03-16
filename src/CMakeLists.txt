@@ -21,6 +21,14 @@ set_target_properties(VulkanCourse PROPERTIES
     CXX_EXTENSIONS OFF
 )
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set( CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" )
+    set_property( DIRECTORY PROPERTY VS_STARTUP_PROJECT ${CMAKE_PROJECT_NAME} )
+    set_property( TARGET VulkanCourse PROPERTY WIN32_EXECUTABLE true )
+
+    target_link_options(VulkanCourse PUBLIC -static -static-libgcc -static-libstdc++)
+endif ()
+
 # Copy Assets to build directory
 add_custom_command(TARGET VulkanCourse POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

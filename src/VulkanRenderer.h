@@ -39,6 +39,9 @@ public:
 	 */
 	int Init(GLFWwindow *newWindow);
 
+	/** @brief Draws the frame */
+	void Draw();
+
 	/** @brief Cleans up the Vulkan Renderer */
 	void Cleanup();
 
@@ -51,6 +54,8 @@ private:
 	/** @brief The window to render to */
 	GLFWwindow *m_window  {nullptr};
 
+	/** @brief The current frame */
+	uint32_t m_currentFrame {0};
 
 	// ======================================================================================================================
 	// ============================================ Vulkan Components =======================================================
@@ -112,6 +117,17 @@ private:
 	VkFormat   m_swapChainImageFormat { };
 	VkExtent2D m_swapChainExtent      { };
 
+	// ++++++++++++++++++++++++++++++++++++++++++++++ Sync Components +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	/** @brief The images available */
+	std::vector<VkSemaphore> m_imageAvailableSemaphore {nullptr};
+
+	/** @brief The max number of frames that can be processed simultaneously */
+	std::vector<VkSemaphore> m_renderFinishedSemaphore {nullptr};
+
+	/** @brief The fences */
+	std::vector<VkFence> m_drawFences {nullptr};
+
 
 	// ======================================================================================================================
 	// ============================================ Vulkan Functions ========================================================
@@ -148,6 +164,9 @@ private:
 
 	/** @brief Create the command buffers */
 	void CreateCommandBuffers();
+
+	/** @brief Create the semaphores */
+	void CreateSemaphores();
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Record Functions +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
