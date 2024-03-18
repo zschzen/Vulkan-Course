@@ -23,6 +23,11 @@ target_include_directories(vendor INTERFACE glm/glm)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_DOCUMENT_INTERNALS OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
 target_link_libraries(vendor INTERFACE glfw)
 target_include_directories(vendor INTERFACE glfw/include)
+
+# ImGui
+add_subdirectory(imgui)
+target_link_libraries(vendor INTERFACE imgui)
