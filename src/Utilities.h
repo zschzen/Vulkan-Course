@@ -21,13 +21,22 @@
 	#endif
 #endif
 
-/** @brief The maximum number of frames that can be in flight */
-constexpr int MAX_FRAME_DRAWS = 3;
+#define VK_CHECK(x)                                                 \
+	do                                                              \
+	{                                                               \
+		VkResult err = x;                                           \
+		if (err)                                                    \
+		{                                                           \
+			fprintf(stderr, "[ERROR] Vulkan error: %d\n", err);     \
+	} while (0)
 
 
 // ======================================================================================================================
 // ============================================ Vulkan Constants ========================================================
 // ======================================================================================================================
+
+/** @brief The maximum number of frames that can be in flight */
+constexpr int MAX_FRAME_DRAWS = 3;
 
 /** @brief The device extensions required by this application */
 const std::vector<const char *> deviceExtensions =
