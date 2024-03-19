@@ -1,10 +1,12 @@
 set(VULKAN_COURSE_SOURCE_FILES
         main.cpp
 
+        Mesh.cpp
         VulkanRenderer.cpp
 )
 
 set(VULKAN_COURSE_HEADER_FILES
+        Mesh.h
         Utilities.h
         VulkanRenderer.h
         VulkanValidation.h
