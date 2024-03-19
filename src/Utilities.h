@@ -157,7 +157,7 @@ typedef struct vertex_t
 	[[nodiscard]] static attributeDescriptions
 	GetAttributeDescriptions()
 	{
-		return std::array<VkVertexInputAttributeDescription, 2>
+		return attributeDescriptions
 		{
 			{
 				{
