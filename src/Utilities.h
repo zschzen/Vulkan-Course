@@ -6,6 +6,8 @@
 #include <fstream>
 #include <ranges>
 
+#include <glm/glm.hpp>
+
 
 // ======================================================================================================================
 // ============================================ Macros ==================================================================
@@ -21,14 +23,17 @@
 	#endif
 #endif
 
-#define VK_CHECK(x)                                                 \
-	do                                                              \
-	{                                                               \
-		VkResult err = x;                                           \
-		if (err)                                                    \
-		{                                                           \
-			fprintf(stderr, "[ERROR] Vulkan error: %d\n", err);     \
-	} while (0)
+#define VK_CHECK(x, msg)               \
+do                                     \
+{                                      \
+	VkResult err = x;                  \
+	if (err != VkResult::VK_SUCCESS)   \
+	{                                  \
+		fprintf(stderr, "!------------ Assertion Failed ------------!\n"); \
+		fprintf(stderr, "%s @ %s:%i\n", #x, __FILE__, __LINE__); \
+		throw std::runtime_error(msg); \
+	}                                  \
+} while (0)
 
 
 // ======================================================================================================================
@@ -122,6 +127,55 @@ typedef struct function_queue_t
 		deque.clear();
 	}
 } function_queue_t;
+
+/**
+ * @struct vertex_t
+ * @brief Contains the position and color of a vertex
+ */
+typedef struct vertex_t
+{
+	typedef std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions;
+
+	glm::vec3 pos   {};
+	glm::vec3 color {};
+
+	/** @brief Get the binding description */
+	[[nodiscard]] static VkVertexInputBindingDescription
+	GetBindingDescription()
+	{
+		return VkVertexInputBindingDescription
+		{
+			.binding   = 0,                           // Which stream index to read from
+			.stride    = sizeof(vertex_t),            // Number of bytes from one entry to the next
+			.inputRate = VK_VERTEX_INPUT_RATE_VERTEX  // How to move between data entries.
+													  //	VK_VERTEX_INPUT_RATE_VERTEX: Move to the next data entry after each vertex
+													  //	VK_VERTEX_INPUT_RATE_INSTANCE: Move to the next data entry after each instance
+		};
+	}
+
+	/** @brief Get the attribute descriptions */
+	[[nodiscard]] static attributeDescriptions
+	GetAttributeDescriptions()
+	{
+		return std::array<VkVertexInputAttributeDescription, 2>
+		{
+			{
+				{
+					.location = 0,                           // Location in the shader
+					.binding  = 0,                           // Which binding the per-vertex data comes from
+					.format   = VK_FORMAT_R32G32B32_SFLOAT,  // The format and size of the data
+					.offset   = offsetof(vertex_t, pos)      // The number of bytes from the start of the data to read from
+				},
+				{
+					.location = 1,
+					.binding  = 0,
+					.format   = VK_FORMAT_R32G32B32_SFLOAT,
+					.offset   = offsetof(vertex_t, color)
+				}
+			}
+		};
+	}
+} vertex_t;
 
 
 // ======================================================================================================================
