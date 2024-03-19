@@ -1,13 +1,14 @@
 #include "VulkanRenderer.h"
 
-#include "VulkanValidation.h"
 #include <cstring>
 #include <array>
 
+#include "VulkanValidation.h"
 
-VulkanRenderer::VulkanRenderer() = default;
-
-VulkanRenderer::~VulkanRenderer() { Cleanup(); }
+VulkanRenderer::~VulkanRenderer()
+{
+	Cleanup();
+}
 
 
 
@@ -26,6 +27,20 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 		// Device Setup
 		GetPhysicalDevice();
 		CreateLogicalDevice();
+
+		{
+			std::vector<vertex_t> meshVertices =
+			{
+				{{0.4,  -0.4, 0.0}, {1.0f, 0.0f, 0.0f}},
+				{{0.4,  0.4,  0.0}, {0.0f, 1.0f, 0.0f}},
+				{{-0.4, 0.4,  0.0}, {0.0f, 0.0f, 1.0f}},
+
+				{{-0.4, 0.4,  0.0}, {0.0f, 0.0f, 1.0f}},
+				{{-0.4, -0.4, 0.0}, {1.0f, 1.0f, 0.0f}},
+				{{0.4,  -0.4, 0.0}, {1.0f, 0.0f, 0.0f}}
+			};
+			firstMesh = Mesh(m_mainDevice.physicalDevice, m_mainDevice.logicalDevice, &meshVertices);
+		}
 
 		// Swap Chain Creation
 		CreateSwapChain();
@@ -92,10 +107,7 @@ VulkanRenderer::Draw()
 	};
 
 	// Submit command buffer to queue
-	if (vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_drawFences[m_currentFrame]) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to submit command buffer to queue");
-	}
+	VK_CHECK(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_drawFences[m_currentFrame]), "Failed to submit command buffer to queue");
 
 	// ----------------------------------------- PRESENT RENDERED IMAGE TO SCREEN --------------------------------
 	// Present info
@@ -110,13 +122,10 @@ VulkanRenderer::Draw()
 	};
 
 	// Present image
-	if (vkQueuePresentKHR(m_presentationQueue, &presentInfo) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to present Image!");
-	}
+	VK_CHECK(vkQueuePresentKHR(m_presentationQueue, &presentInfo), "Failed to present Image!");
 
 	// Increment current frame (limited by MAX_FRAME_DRAWS)
-	m_currentFrame = ++m_currentFrame % MAX_FRAME_DRAWS;
+	m_currentFrame = (m_currentFrame + 1) % MAX_FRAME_DRAWS;
 }
 
 void
@@ -127,6 +136,8 @@ VulkanRenderer::Cleanup()
 	// Wait for a logical device to finish before cleanup
 	vkDeviceWaitIdle(m_mainDevice.logicalDevice);
 
+	firstMesh.DestroyVertexBuffer();
+
 	m_mainDeletionQueue.flush();
 }
 
@@ -136,10 +147,8 @@ VulkanRenderer::CreateInstance()
 	// Check if validation layers are available
 	{
 		std::string unSupValLayer{};
-		if (ENABLE_VALIDATION_LAYERS && !TryCheckValidationLayerSupport(unSupValLayer))
-		{
-			throw std::runtime_error("Validation layer not supported: " + unSupValLayer);
-		}
+		const auto result = (VkResult)(!TryCheckValidationLayerSupport(unSupValLayer));
+		VK_CHECK(result, ((std::string)"Validation layers not supported: " + unSupValLayer).c_str());
 	}
 
 	// Information about the application.
@@ -186,10 +195,7 @@ VulkanRenderer::CreateInstance()
 	}
 
 	// Create the Vulkan Instance
-	if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VkResult::VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create Vulkan Instance");
-	}
+	VK_CHECK(vkCreateInstance(&createInfo, nullptr, &m_instance), "Failed to create Vulkan Instance");
 
 	// Add instance to deletion queue
 	m_mainDeletionQueue.push_function([&]()
@@ -242,10 +248,7 @@ VulkanRenderer::CreateLogicalDevice()
 		.pEnabledFeatures         = &physicalDeviceFeatures
 	};
 
-	if (vkCreateDevice(m_mainDevice.physicalDevice, &deviceCreateInfo, nullptr, &m_mainDevice.logicalDevice) != VkResult::VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create a logical device");
-	}
+	VK_CHECK(vkCreateDevice(m_mainDevice.physicalDevice, &deviceCreateInfo, nullptr, &m_mainDevice.logicalDevice), "Failed to create a logical device");
 
 	// Queues are created at the same time as the device
 	vkGetDeviceQueue(m_mainDevice.logicalDevice, indices.graphicsFamily, 0, &m_graphicsQueue);
@@ -269,10 +272,7 @@ VulkanRenderer::CreateDebugMessenger()
 	PopulateDebugMessengerCreateInfo(createInfo);
 
 	// Create the debug messenger
-	if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to set up debug messenger");
-	}
+	VK_CHECK(CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger), "Failed to set up debug messenger");
 
 	// Add to deletion queue
 	m_mainDeletionQueue.push_function([&]()
@@ -285,10 +285,7 @@ VulkanRenderer::CreateDebugMessenger()
 void
 VulkanRenderer::CreateSurface()
 {
-	if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VkResult::VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create Surface!");
-	}
+	VK_CHECK(glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface), "Failed to create Surface!");
 
 	// Add surface to deletion queue
 	m_mainDeletionQueue.push_function([&]()
@@ -362,10 +359,7 @@ VulkanRenderer::CreateSwapChain()
 	}
 
 	// Create Swapchain
-	if (vkCreateSwapchainKHR(m_mainDevice.logicalDevice, &swapChainCreateInfo, nullptr, &m_swapchain) != VkResult::VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create a Swapchain!");
-	}
+	VK_CHECK(vkCreateSwapchainKHR(m_mainDevice.logicalDevice, &swapChainCreateInfo, nullptr, &m_swapchain), "Failed to create a Swapchain!");
 
 	// Store for later reference
 	m_swapChainImageFormat = surfaceFormat.format;
@@ -508,10 +502,7 @@ VulkanRenderer::CreateRenderPass()
 	};
 
 	// Create the render pass
-	if (vkCreateRenderPass(m_mainDevice.logicalDevice, &renderPassCreateInfo, nullptr, &m_renderPass) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create a Render Pass!");
-	}
+	VK_CHECK(vkCreateRenderPass(m_mainDevice.logicalDevice, &renderPassCreateInfo, nullptr, &m_renderPass), "Failed to create a Render Pass!");
 
 	// Add to deletion queue
 	m_mainDeletionQueue.push_function([&]()
@@ -558,13 +549,16 @@ VulkanRenderer::CreateGraphicsPipeline()
 
 	/* ----------------------------------------- Vertex Input ----------------------------------------- */
 
+	VkVertexInputBindingDescription bindingDescription    = vertex_t::GetBindingDescription();
+	vertex_t::attributeDescriptions attributeDescriptions = vertex_t::GetAttributeDescriptions();
+
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo =
 	{
 		.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		.vertexBindingDescriptionCount   = 0,           // Number of vertex binding descriptions
-		.pVertexBindingDescriptions      = nullptr,     // List of vertex binding descriptions (data spacing/stride information)
-		.vertexAttributeDescriptionCount = 0,           // Number of vertex attribute descriptions
-		.pVertexAttributeDescriptions    = nullptr      // List of vertex attribute descriptions (data format and where to bind to from)
+		.vertexBindingDescriptionCount   = 1,                                                   // Number of vertex binding descriptions
+		.pVertexBindingDescriptions      = &bindingDescription,                                 // List of vertex binding descriptions (data spacing/stride information)
+		.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()), // Number of vertex attribute descriptions
+		.pVertexAttributeDescriptions    = attributeDescriptions.data()                         // List of vertex attribute descriptions (data format and where to bind to from)
 	};
 
 
@@ -745,10 +739,7 @@ VulkanRenderer::CreateGraphicsPipeline()
 		.pPushConstantRanges    = nullptr   // Push constant ranges to use with pipeline
 	};
 
-	if (vkCreatePipelineLayout(m_mainDevice.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create pipeline layout!");
-	}
+	VK_CHECK(vkCreatePipelineLayout(m_mainDevice.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout), "Failed to create pipeline layout");
 
 
 	/* ----------------------------------------- Create Pipeline ----------------------------------------- */
@@ -778,10 +769,7 @@ VulkanRenderer::CreateGraphicsPipeline()
 		.basePipelineIndex   = -1                                                 // Index of the base pipeline to derive from
 	};
 
-	if (vkCreateGraphicsPipelines(m_mainDevice.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &m_graphicsPipeline) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create Graphics Pipeline!");
-	}
+	VK_CHECK(vkCreateGraphicsPipelines(m_mainDevice.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &m_graphicsPipeline), "Failed to create Graphics Pipeline");
 
 	// Destroy shader modules
 	vkDestroyShaderModule(m_mainDevice.logicalDevice, fragShaderModule, nullptr);
@@ -822,10 +810,7 @@ VulkanRenderer::CreateFramebuffers()
 			.layers          = 1                                           // Number of layers to be used by the framebuffer
 		};
 
-		if (vkCreateFramebuffer(m_mainDevice.logicalDevice, &framebufferCreateInfo, nullptr, &m_swapChainFramebuffers[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create a Framebuffer!");
-		}
+		VK_CHECK(vkCreateFramebuffer(m_mainDevice.logicalDevice, &framebufferCreateInfo, nullptr, &m_swapChainFramebuffers[i]), "Failed to create a Framebuffer!");
 	}
 
 	// Add framebuffers to deletion queue
@@ -852,10 +837,7 @@ VulkanRenderer::CreateCommandPool()
 	};
 
 	// Create a Graphics Queue Family Command Pool
-	if (vkCreateCommandPool(m_mainDevice.logicalDevice, &poolCreateInfo, nullptr, &m_graphicsCommandPool) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create a command pool!");
-	}
+	VK_CHECK(vkCreateCommandPool(m_mainDevice.logicalDevice, &poolCreateInfo, nullptr, &m_graphicsCommandPool), "Failed to create a command pool");
 
 	// Add command pool to deletion queue
 	m_mainDeletionQueue.push_function([&]()
@@ -890,10 +872,7 @@ VulkanRenderer::CreateCommandBuffers()
 	 * 	vkCommandExecuteCommands(buffer) : Execute secondary command buffers from primary command buffer.
 	 */
 
-	if (vkAllocateCommandBuffers(m_mainDevice.logicalDevice, &commandBufferAllocInfo, m_commandBuffers.data()) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to allocate command buffers!");
-	}
+	VK_CHECK(vkAllocateCommandBuffers(m_mainDevice.logicalDevice, &commandBufferAllocInfo, m_commandBuffers.data()), "Failed to allocate command buffers!");
 
 	// Add command buffers to deletion queue
 	m_mainDeletionQueue.push_function([&]()
@@ -926,19 +905,11 @@ VulkanRenderer::CreateSemaphores()
 	for (size_t i = 0; i < MAX_FRAME_DRAWS; ++i)
 	{
 		// Create Semaphores
-		if (vkCreateSemaphore(m_mainDevice.logicalDevice, &semaphoreCreateInfo, nullptr,
-							  &m_imageAvailableSemaphore[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(m_mainDevice.logicalDevice, &semaphoreCreateInfo, nullptr,
-							  &m_renderFinishedSemaphore[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create a Semaphore!");
-		}
+		VK_CHECK(vkCreateSemaphore(m_mainDevice.logicalDevice, &semaphoreCreateInfo, nullptr, &m_imageAvailableSemaphore[i]), "Failed to create a Semaphore!");
+		VK_CHECK(vkCreateSemaphore(m_mainDevice.logicalDevice, &semaphoreCreateInfo, nullptr, &m_renderFinishedSemaphore[i]), "Failed to create a Semaphore!");
 
 		// Create Fences
-		if (vkCreateFence(m_mainDevice.logicalDevice, &fenceCreateInfo, nullptr, &m_drawFences[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create a Fence!");
-		}
+		VK_CHECK(vkCreateFence(m_mainDevice.logicalDevice, &fenceCreateInfo, nullptr, &m_drawFences[i]), "Failed to create a Fence!");
 	}
 
 	// Add semaphores to deletion queue
@@ -996,13 +967,10 @@ VulkanRenderer::RecordCommands()
 
 
 		// Start recording commands to the command buffer
-		if(vkBeginCommandBuffer(m_commandBuffers[i], &bufferBeginInfo) != VK_SUCCESS)
-		{
-			throw std::runtime_error(&"Failed to start recording a command buffer: " [i]);
-		}
+		VK_CHECK(vkBeginCommandBuffer(m_commandBuffers[i], &bufferBeginInfo), "Failed to start recording a command buffer");
 
 
-			// ------------------------------------- Begin the render pass --------------------------------------
+			/* ------------------------------------- Begin the render pass -------------------------------------- */
 			// Begin the render pass
 			//	- VK_SUBPASS_CONTENTS_INLINE: All the render commands will be embedded in the primary command buffer. Will be inlined.
 			//	- VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS: The render commands will be executed from secondary command buffers.
@@ -1032,16 +1000,19 @@ VulkanRenderer::RecordCommands()
 				vkCmdBindPipeline(m_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
 
 				// ------- Draw -------
-				vkCmdDraw(m_commandBuffers[i], 3, 1, 0, 0);
+				VkBuffer vertexBuffers[] = { firstMesh.GetVertexBuffer() };                  // Buffers to bind
+				VkDeviceSize offsets[] = { 0 };                                              // Offsets into buffers being bound
+				vkCmdBindVertexBuffers(m_commandBuffers[i], 0, 1, vertexBuffers, offsets);   // Command to bind vertex buffer before drawing with them
+
+				vkCmdDraw(m_commandBuffers[i], static_cast<uint32_t>(firstMesh.GetVertexCount()), 1, 0, 0);   // Command to draw
 
 
-			// End the render pass
+			/* ------------------------------------- End the render pass -------------------------------------- */
 			vkCmdEndRenderPass(m_commandBuffers[i]);
 
-		if(vkEndCommandBuffer(m_commandBuffers[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error(&"Failed to stop recording a command buffer: " [i]);
-		}
+
+		// Stop recording commands to the command buffer
+		VK_CHECK(vkEndCommandBuffer(m_commandBuffers[i]), "Failed to stop recording a command buffer");
 	}
 }
 
@@ -1060,10 +1031,8 @@ VulkanRenderer::GetRequiredExtensions()
 	// Check if the instance extensions are supported
 	{
 		std::string unSupExt{};
-		if (!TryCheckInstanceExtensionSupport(&extensions, unSupExt))
-		{
-			throw std::runtime_error("VkInstance does not support required extension: " + unSupExt);
-		}
+		auto result = (VkResult)!TryCheckInstanceExtensionSupport(&extensions, unSupExt);
+		VK_CHECK(result, ((std::string)"VkInstance does not support required extension: " + unSupExt).c_str());
 	}
 
 	// Enable the debug extension if validation layers are enabled
@@ -1308,13 +1277,14 @@ VulkanRenderer::GetQueueFamilies(VkPhysicalDevice device)
 swapChainDetails_t
 VulkanRenderer::GetSwapChainDetails(VkPhysicalDevice device)
 {
-	swapChainDetails_t swapChainDetails {};
+	swapChainDetails_t swapChainDetails {0};
 
-	// -- CAPABILITIES --
-	// Get the surface capabilities for the given surface on the given physical device
+	/* ----------------------------------------- Capabilities ----------------------------------------------- */
+
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_surface, &swapChainDetails.surfaceCapabilities);
 
-	// -- SURFACE FORMATS --
+	/* ----------------------------------------- Surface Formats -------------------------------------------- */
+
 	uint32_t formatCount = 0;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_surface, &formatCount, nullptr);
 
@@ -1325,7 +1295,8 @@ VulkanRenderer::GetSwapChainDetails(VkPhysicalDevice device)
 		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_surface, &formatCount, swapChainDetails.formats.data());
 	}
 
-	// -- PRESENTATION MODES --
+	/* ----------------------------------------- Presentation Modes ----------------------------------------- */
+
 	uint32_t presentationCount = 0;
 	vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_surface, &presentationCount, nullptr);
 
@@ -1442,10 +1413,7 @@ VulkanRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFla
 
 	// Create image view and return it
 	VkImageView imageView;
-	if (vkCreateImageView(m_mainDevice.logicalDevice, &viewInfo, nullptr, &imageView) != VkResult::VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create an Image View!");
-	}
+	VK_CHECK(vkCreateImageView(m_mainDevice.logicalDevice, &viewInfo, nullptr, &imageView), "Failed to create an Image View!");
 
 	return imageView;
 }
@@ -1463,10 +1431,7 @@ VulkanRenderer::CreateShaderModule(const std::vector<char> &code) const
 
 	// Create shader module
 	VkShaderModule shaderModule;
-	if (vkCreateShaderModule(m_mainDevice.logicalDevice, &createInfo, nullptr, &shaderModule) != VkResult::VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create a shader module!");
-	}
+	VK_CHECK(vkCreateShaderModule(m_mainDevice.logicalDevice, &createInfo, nullptr, &shaderModule), "Failed to create a shader module!");
 
 	return shaderModule;
 }

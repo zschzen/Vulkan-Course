@@ -11,8 +11,8 @@
 #include <vector>
 #include <set>
 
+#include "Mesh.h"
 #include "Utilities.h"
-
 
 
 /**
@@ -23,7 +23,7 @@ class VulkanRenderer
 {
 public:
 
-	VulkanRenderer();
+	VulkanRenderer() = default;
 	~VulkanRenderer();
 
 
@@ -56,6 +56,8 @@ private:
 
 	/** @brief The current frame */
 	uint32_t m_currentFrame {0};
+
+	Mesh firstMesh;
 
 	// ======================================================================================================================
 	// ============================================ Vulkan Components =======================================================
