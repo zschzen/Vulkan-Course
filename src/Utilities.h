@@ -6,6 +6,7 @@
 #include <fstream>
 #include <ranges>
 #include <array>
+#include <vector>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -70,7 +71,7 @@ typedef struct queueFamilyIndices_t
 	int presentationFamily = -1;
 
 	/** @brief Check if the queue families are valid */
-	[[nodiscard]] inline bool IsValid() const { return graphicsFamily >= 0 && presentationFamily >= 0; }
+	inline bool IsValid() const { return graphicsFamily >= 0 && presentationFamily >= 0; }
 
 } queueFamilyIndices_t;
 
@@ -102,7 +103,8 @@ typedef struct function_queue_t
 	std::deque< std::function<void()> > deque {};
 
 	/** @brief Check if the queue is empty */
-	[[nodiscard]] FORCE_INLINE bool
+	[[nodiscard]]
+	FORCE_INLINE bool
 	empty() const
 	{
 		return deque.empty();
@@ -110,21 +112,21 @@ typedef struct function_queue_t
 
 	/** @brief Get the size of the queue */
 	template<typename T = size_t>
-	[[nodiscard]] FORCE_INLINE T
+	FORCE_INLINE T
 	size() const
 	{
 		return static_cast<T>(deque.size());
 	}
 
 	/** @brief Push a function to the queue */
-	FORCE_INLINE void
+	void
 	push_function(std::function<void()>&& function)
 	{
 		deque.push_back(function);
 	}
 
 	/** @brief Flush the function queue */
-	FORCE_INLINE void
+	void
 	flush()
 	{
 		for (const auto & it : std::ranges::reverse_view(deque)) (it)();
@@ -144,7 +146,7 @@ typedef struct vertex_t
 	glm::vec3 color {};
 
 	/** @brief Get the binding description */
-	[[nodiscard]] static VkVertexInputBindingDescription
+	static VkVertexInputBindingDescription
 	GetBindingDescription()
 	{
 		return VkVertexInputBindingDescription
@@ -158,7 +160,7 @@ typedef struct vertex_t
 	}
 
 	/** @brief Get the attribute descriptions */
-	[[nodiscard]] static attributeDescriptions
+	static attributeDescriptions
 	GetAttributeDescriptions()
 	{
 		return attributeDescriptions
@@ -192,7 +194,6 @@ typedef struct vertex_t
  * @param filename The name of the file to read
  * @return The contents of the file
  */
-[[nodiscard]]
 inline std::vector<char>
 ReadFile(const std::string &filename)
 {
@@ -215,6 +216,188 @@ ReadFile(const std::string &filename)
 	// Close the file and return the buffer
 	file.close();
 	return buffer;
+}
+
+
+/**
+ * @brief Find the memory type index
+ *
+ * @param physicalDevice The physical device to use
+ * @param typeFilter The memory type filter
+ * @param properties The memory properties
+ *
+ * @return The index of the memory type
+ */
+[[nodiscard]]
+static uint32_t
+FindMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+	// Retrieve the properties of the physical device's memory
+	VkPhysicalDeviceMemoryProperties memProps {0};
+	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProps);
+
+	// Iterate over the memory types available on the device
+	for (uint32_t i = 0; i < memProps.memoryTypeCount; ++i)
+	{
+		// Check if the memory type is allowed
+		if ( ( typeFilter & ( 1 << i ) ) == 0) continue;
+
+		// Check if the memory type has the desired properties
+		if ( ( memProps.memoryTypes[i].propertyFlags & properties ) != properties ) continue;
+
+		// Return the index of the memory type
+		return i;
+	}
+
+	throw std::runtime_error("Failed to find a suitable memory type!");
+}
+
+
+/**
+ * @brief Create a buffer
+ *
+ * @param physicalDevice The physical device to use
+ * @param device The logical device to use
+ * @param bufferSize The size of the buffer
+ * @param bufferUsage The buffer usage flags
+ * @param memoryProperties The memory properties
+ * @param buffer The buffer to create
+ * @param bufferMemory The memory to allocate to the buffer
+ *
+ * @return The buffer and its memory
+ */
+static void
+CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage,
+			 VkMemoryPropertyFlags bufferProperties, VkBuffer * buffer, VkDeviceMemory * bufferMemory)
+{
+
+	/* ----------------------------------------- Create Vertex Buffer ----------------------------------------- */
+
+	VkBufferCreateInfo bufferInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.size = bufferSize,                             // Size of buffer (size of 1 vertex * number of vertices)
+		.usage = bufferUsage,                           // Multiple types of buffer possible
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE        // Similar to Swap Chain images, can share vertex buffers
+	};
+
+	VK_CHECK(vkCreateBuffer(device, &bufferInfo, nullptr, buffer), "Failed to create a buffer!");
+
+	/* ----------------------------------------- Get Buffer Memory Requirements ----------------------------------------- */
+
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements(device, *buffer, &memRequirements);
+
+	/* ----------------------------------------- Allocate Memory to Buffer ----------------------------------------- */
+
+	// Allocate memory to the buffer
+	VkMemoryAllocateInfo memoryAllocInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		.allocationSize = memRequirements.size,
+		.memoryTypeIndex = FindMemoryTypeIndex(physicalDevice, memRequirements.memoryTypeBits,		// Index of memory type on Physical Device that has required bit flags
+											   bufferProperties)
+	};
+
+	VK_CHECK(vkAllocateMemory(device, &memoryAllocInfo, nullptr, bufferMemory), "Failed to allocate buffer memory!");
+	VK_CHECK(vkBindBufferMemory(device, *buffer, *bufferMemory, 0), "Failed to bind buffer memory!");
+}
+
+/**
+ * @brief Allocate a command buffer
+ *
+ * @param device The logical device to use
+ * @param commandPool The command pool to use
+ * @param OutCommandBuffer The command buffer to allocate
+ * @param bufferLevel The level of the buffer
+ * @param commandBufferCount The number of command buffers to allocate
+ */
+static void
+AllocateCommandBuffer(VkDevice device, VkCommandPool commandPool, VkCommandBuffer &OutCommandBuffer,
+					  VkCommandBufferLevel bufferLevel = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+					  uint32_t commandBufferCount = 1)
+{
+	// Command buffer allocation info
+	VkCommandBufferAllocateInfo allocInfo
+	{
+		.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.commandPool        = commandPool,
+		.level              = bufferLevel,
+		.commandBufferCount = commandBufferCount
+	};
+
+	/**
+	 *
+	 * TIPS:
+	 *
+	 * Levels of Command Buffers:
+	 *	1. Primary: Can be submitted to a queue for execution, but cannot be called from other command buffers.
+	 *	2. Secondary: Cannot be submitted directly, but can be called from primary command buffers.
+	 *
+	 * Usage:
+	 * 	vkCommandExecuteCommands(buffer) : Execute secondary command buffers from primary command buffer.
+	 */
+
+	// Allocate command buffer
+	VK_CHECK(vkAllocateCommandBuffers(device, &allocInfo, &OutCommandBuffer), "Failed to allocate command buffer!");
+}
+
+/**
+ * @ brief Copy a buffer to another buffer
+ *
+ * @param device The logical device to use
+ * @param transferQueue The queue to use for transfer operations
+ * @param transferCommandPool The command pool to use for transfer operations
+ * @param srcBuffer The source buffer
+ * @param dstBuffer The destination buffer
+ * @param bufferSize The size of the buffer
+ */
+static void
+CopyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool,
+		   VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize bufferSize)
+{
+	// Allocate the command buffer
+	VkCommandBuffer transferCommandBuffer {VK_NULL_HANDLE};
+	AllocateCommandBuffer(device, transferCommandPool, transferCommandBuffer);
+
+	// Begin the command buffer
+	VkCommandBufferBeginInfo beginInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT  // We're only using the command buffer once
+	};
+
+	// Begin recording transfer commands
+	VK_CHECK(vkBeginCommandBuffer(transferCommandBuffer, &beginInfo), "Failed to begin transfer command buffer!");
+
+		// Region of data to copy from and to
+		VkBufferCopy bufferCopyRegion
+		{
+			.srcOffset = 0,          // Start at the beginning of the source buffer
+			.dstOffset = 0,          // Start at the beginning of the destination buffer
+			.size      = bufferSize  // Size of data to copy
+		};
+
+		// Command to copy src buffer to dst buffer
+		vkCmdCopyBuffer(transferCommandBuffer, srcBuffer, dstBuffer, 1, &bufferCopyRegion);
+
+	// End commands
+	VK_CHECK(vkEndCommandBuffer(transferCommandBuffer), "Failed to end transfer command buffer!");
+
+	// Queue the command buffer
+	VkSubmitInfo submitInfo
+	{
+		.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.commandBufferCount = 1,
+		.pCommandBuffers    = &transferCommandBuffer
+	};
+
+	// Submit transfer command to transfer queue and wait until it finishes
+	VK_CHECK(vkQueueSubmit(transferQueue, 1, &submitInfo, VK_NULL_HANDLE), "Failed to submit transfer command buffer!");
+	VK_CHECK(vkQueueWaitIdle(transferQueue), "Failed to wait for transfer queue to finish!");
+
+	// Free temporary command buffer back to pool
+	vkFreeCommandBuffers(device, transferCommandPool, 1, &transferCommandBuffer);
 }
 
 #endif //UTILITIES_H
