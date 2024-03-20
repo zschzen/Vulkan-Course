@@ -18,42 +18,58 @@ class Mesh
 public:
 
 	Mesh() = default;
-	Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, std::vector<vertex_t> *vertices);
+	Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice,
+		 VkQueue transferQueue, VkCommandPool transferCommandPool,
+		 std::vector<vertex_t> *vertices, std::vector<uint32_t> *indices);
 	~Mesh();
 
 	/** @brief Get the number of vertices in the mesh */
-	[[nodiscard]] int GetVertexCount() const;
+	int GetVertexCount() const;
 
 	/** @brief Get the vertex buffer */
-	[[nodiscard]] VkBuffer GetVertexBuffer() const;
+	VkBuffer GetVertexBuffer() const;
+
+	/** @brief Get the number of indices in the mesh */
+	int GetIndexCount() const;
+
+	/** @brief Get the index buffer */
+	VkBuffer GetIndexBuffer() const;
 
 	/** @brief Destroy the vertex buffer */
 	void DestroyVertexBuffer();
 
 private:
 
+	// Vertex buffer
 	int vertexCount                   {0}; // < The number of vertices in the mesh
 	VkBuffer vertexBuffer             { }; // < The vertex buffer
 	VkDeviceMemory vertexBufferMemory { }; // < The memory used to store the vertex buffer
 
+	// Index buffer
+	int indexCount                    {0}; // < The number of indices in the mesh
+	VkBuffer indexBuffer              { }; // < The index buffer
+	VkDeviceMemory indexBufferMemory  { }; // < The memory used to store the index buffer
+
+	// Vulkan device
 	VkPhysicalDevice physicalDevice   { }; // < The physical device used to create the vertex buffer
 	VkDevice device                   { }; // < The logical device used to create the vertex buffer
 
 
 	/**
 	 * @brief Create the vertex buffer
+	 * @param transferQueue The queue to use for transfer operations
+	 * @param transferCommandPool The command pool to use for transfer operations
 	 * @param vertices The vertices to create the buffer from
 	 */
-	void CreateVertexBuffer(std::vector<vertex_t> *vertices);
+	void CreateVertexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<vertex_t> *vertices);
 
 	/**
-	 * @brief Find the memory type index
-	 * @param allowedTypes The types of memory allowed
-	 * @param properties The properties of the memory
-	 * @return The index of the memory type
+	 * @brief Create the index buffer
+	 * @param transferQueue The queue to use for transfer operations
+	 * @param transferCommandPool The command pool to use for transfer operations
+	 * @param indices The indices to create the buffer from
 	 */
-	[[nodiscard]] uint32_t
-	FindMemoryTypeIndex(uint32_t allowedTypes, VkMemoryPropertyFlags properties);
+	void CreateIndexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<uint32_t> *indices);
 };
 
 
@@ -69,11 +85,26 @@ Mesh::GetVertexBuffer() const
 	return vertexBuffer;
 }
 
+FORCE_INLINE int
+Mesh::GetIndexCount() const
+{
+	return indexCount;
+}
+
+FORCE_INLINE VkBuffer
+Mesh::GetIndexBuffer() const
+{
+	return indexBuffer;
+}
+
 FORCE_INLINE void
 Mesh::DestroyVertexBuffer()
 {
 	vkDestroyBuffer(device, vertexBuffer, nullptr);
 	vkFreeMemory(device, vertexBufferMemory, nullptr);
+
+	vkDestroyBuffer(device, indexBuffer, nullptr);
+	vkFreeMemory(device, indexBufferMemory, nullptr);
 }
 
 #endif //VULKAN_COURSE_MESH_H
