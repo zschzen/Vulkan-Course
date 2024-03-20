@@ -57,7 +57,7 @@ private:
 	/** @brief The current frame */
 	uint32_t m_currentFrame {0};
 
-	Mesh firstMesh;
+	std::vector<Mesh> m_meshList { };
 
 	// ======================================================================================================================
 	// ============================================ Vulkan Components =======================================================
@@ -183,7 +183,7 @@ private:
 	 * @brief Get the required extensions for the Vulkan Instance
 	 * @return The required extensions for the Vulkan Instance
 	 */
-	[[nodiscard]] std::vector<const char*> GetRequiredExtensions();
+	std::vector<const char*> GetRequiredExtensions();
 
 	/** @brief Get the required extensions for the Vulkan Instance */
 	void GetPhysicalDevice();
@@ -251,7 +251,7 @@ private:
 	 * @param InFormats The available formats
 	 * @return The best surface format
 	 */
-	[[nodiscard]] VkSurfaceFormatKHR ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &InFormats);
+	VkSurfaceFormatKHR ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &InFormats);
 
 	/**
 	 * @brief Choose the best presentation mode. Subject to change
@@ -259,7 +259,7 @@ private:
 	 * @param InPresentationModes The available presentation modes
 	 * @return The best presentation mode
 	 */
-	[[nodiscard]] VkPresentModeKHR ChooseBestPresentationMode(const std::vector<VkPresentModeKHR> &InPresentationModes);
+	VkPresentModeKHR ChooseBestPresentationMode(const std::vector<VkPresentModeKHR> &InPresentationModes);
 
 	/**
 	 * @brief Choose the swap extent
@@ -267,7 +267,7 @@ private:
 	 * @param InSurfaceCapabilities The surface capabilities
 	 * @return The swap extent
 	 */
-	[[nodiscard]] VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &InSurfaceCapabilities);
+	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &InSurfaceCapabilities);
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++ Create Functions ++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -287,7 +287,7 @@ private:
 	 * @param code The code of the shader
 	 * @return The shader module
 	 */
-	VkShaderModule CreateShaderModule(const std::vector<char> &code) const;
+	[[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<char> &code) const;
 
 };
 
