@@ -177,8 +177,10 @@ VulkanRenderer::CreateInstance()
 	if (ENABLE_VALIDATION_LAYERS)
 	{
 		std::string unSupValLayer{};
-		VK_CHECK( ( VkResult    ) ( !TryCheckValidationLayerSupport( unSupValLayer ) ),
-				( ( std::string )   "Validation layers not supported: " + unSupValLayer ).c_str() );
+		if (!TryCheckValidationLayerSupport(unSupValLayer))
+		{
+			throw std::runtime_error("Validation layers not supported: " + unSupValLayer);
+		}
 	}
 
 	// Information about the application.
@@ -1078,8 +1080,10 @@ VulkanRenderer::GetRequiredExtensions()
 	// Check if the instance extensions are supported
 	{
 		std::string unSupExt{};
-		const auto result = static_cast<VkResult>(!TryCheckInstanceExtensionSupport(&extensions, unSupExt));
-		VK_CHECK(result, ("VkInstance does not support required extension: " + unSupExt).c_str());
+		if (!TryCheckInstanceExtensionSupport(&extensions, unSupExt))
+		{
+			throw std::runtime_error("VkInstance does not support required extension: " + unSupExt);
+		}
 	}
 
 	// Enable the debug extension if validation layers are enabled
@@ -1251,11 +1255,12 @@ VulkanRenderer::CheckDeviceSuitable(VkPhysicalDevice device)
 	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
 	// Check if the device supports the required extensions
-	std::string unSupDevExt{};
-	if (!TryCheckDeviceExtensionSupport(device, unSupDevExt))
 	{
-		fprintf(stderr, "[ERROR] Device does not support required extension: %s\n", unSupDevExt.c_str());
-		return false;
+		std::string unSupDevExt{};
+		if (!TryCheckDeviceExtensionSupport(device, unSupDevExt))
+		{
+			throw std::runtime_error("Device does not support required extension: " + unSupDevExt);
+		}
 	}
 
 	// Check if the device supports the required queue families
