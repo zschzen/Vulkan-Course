@@ -1078,13 +1078,14 @@ VulkanRenderer::GetRequiredExtensions()
 	// Check if the instance extensions are supported
 	{
 		std::string unSupExt{};
-		auto result = (VkResult)!TryCheckInstanceExtensionSupport(&extensions, unSupExt);
-		VK_CHECK(result, ((std::string)"VkInstance does not support required extension: " + unSupExt).c_str());
+		const auto result = static_cast<VkResult>(!TryCheckInstanceExtensionSupport(&extensions, unSupExt));
+		VK_CHECK(result, ("VkInstance does not support required extension: " + unSupExt).c_str());
 	}
 
 	// Enable the debug extension if validation layers are enabled
 	if (ENABLE_VALIDATION_LAYERS)
 	{
+		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 
