@@ -4,6 +4,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>
@@ -45,6 +48,9 @@ public:
 	/** @brief Cleans up the Vulkan Renderer */
 	void Cleanup();
 
+	/** @brief Updates the model */
+	void UpdateModel(glm::mat4 newModel) { m_ubo.model = newModel; }
+
 private:
 
 	// ======================================================================================================================
@@ -57,7 +63,20 @@ private:
 	/** @brief The current frame */
 	uint32_t m_currentFrame {0};
 
+	// ======================================================================================================================
+	// ============================================ Scene Components ========================================================
+	// ======================================================================================================================
+
+	/** @brief The mesh list */
 	std::vector<Mesh> m_meshList { };
+
+	/** @brief Scene settings */
+	struct mvp_t
+	{
+		glm::mat4 proj;
+		glm::mat4 view;
+		glm::mat4 model;
+	} m_ubo { 0 };
 
 	// ======================================================================================================================
 	// ============================================ Vulkan Components =======================================================
@@ -66,36 +85,43 @@ private:
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Main Components ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	/** @brief The debug messenger callback */
-	VkDebugUtilsMessengerEXT m_debugMessenger {nullptr};
+	VkDebugUtilsMessengerEXT m_debugMessenger { VK_NULL_HANDLE };
 
 	/** @brief The Vulkan instance */
-	VkInstance m_instance                     {nullptr};
+	VkInstance m_instance                     { VK_NULL_HANDLE };
 
 	/** @brief The Vulkan surface */
-	VkSurfaceKHR m_surface                    {nullptr};
+	VkSurfaceKHR m_surface                    { VK_NULL_HANDLE };
 
-	VkSwapchainKHR m_swapchain                {nullptr};
+	VkSwapchainKHR m_swapchain                { VK_NULL_HANDLE };
 
 	std::vector<swapchainImage_t> m_swapChainImages { };
 	std::vector<VkFramebuffer> m_swapChainFramebuffers { };
 	std::vector<VkCommandBuffer> m_commandBuffers { };
 
+	// ++++++++++++++++++++++++++++++++++++++++++++++ Descriptors ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	/**
+	 * @brief Descriptor set layout is used to define the layout of descriptors used in the pipeline.
+	 * For example uniform buffers (like UBOs) and image samplers
+	 */
+	VkDescriptorSetLayout m_descriptorSetLayout { VK_NULL_HANDLE };
+
+	/** @brief Descriptor pool is used to allocate descriptor sets to write descriptors into. */
+	VkDescriptorPool m_descriptorPool                  { VK_NULL_HANDLE };
+	std::vector<VkDescriptorSet> m_descriptorSets      {  };
+
+	std::vector<VkBuffer>       m_uniformBuffers       {  };
+	std::vector<VkDeviceMemory> m_uniformBuffersMemory {  };
+
 	// +++++++++++++++++++++++++++++++++++++++++++++++ Pools +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	/** @brief The command pool */
-	VkCommandPool m_graphicsCommandPool {nullptr};
+	VkCommandPool m_graphicsCommandPool { VK_NULL_HANDLE };
 
 	// +++++++++++++++++++++++++++++++++++++++++++++++ Device Components +++++++++++++++++++++++++++++++++++++++++++++++++++
 
-	/**
-	 * @struct MainDevice
-	 * @brief Contains information about the Vulkan device and memory
-	 */
-	struct
-	{
-		VkPhysicalDevice  physicalDevice;    // Physical device (GPU) that Vulkan will use
-		VkDevice          logicalDevice;     // Logical device (application's view of the physical device) that Vulkan will use
-	} m_mainDevice {};
+	device_t m_mainDevice { VK_NULL_HANDLE };
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Queues +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -106,13 +132,13 @@ private:
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Graphics Pipeline +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	/** @brief The graphics pipeline */
-	VkPipeline      m_graphicsPipeline    {nullptr};
+	VkPipeline      m_graphicsPipeline    { VK_NULL_HANDLE };
 
 	/** @brief The pipeline layout */
-	VkPipelineLayout m_pipelineLayout     {nullptr};
+	VkPipelineLayout m_pipelineLayout     { VK_NULL_HANDLE };
 
 	/** @brief The render pass */
-	VkRenderPass     m_renderPass         {nullptr};
+	VkRenderPass     m_renderPass         { VK_NULL_HANDLE };
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Utility Components +++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -124,13 +150,13 @@ private:
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Sync Components +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	/** @brief The images available */
-	std::vector<VkSemaphore> m_imageAvailableSemaphore {nullptr};
+	std::vector<VkSemaphore> m_imageAvailableSemaphore { };
 
 	/** @brief The max number of frames that can be processed simultaneously */
-	std::vector<VkSemaphore> m_renderFinishedSemaphore {nullptr};
+	std::vector<VkSemaphore> m_renderFinishedSemaphore { };
 
 	/** @brief The fences */
-	std::vector<VkFence> m_drawFences {nullptr};
+	std::vector<VkFence> m_drawFences                  { };
 
 
 	// ======================================================================================================================
@@ -157,6 +183,9 @@ private:
 	/** @brief Create the render pass */
 	void CreateRenderPass();
 
+	/** @brief Create the descriptor set layout */
+	void CreateDescriptorSetLayout();
+
 	/** @brief Create the Graphics Pipeline */
 	void CreateGraphicsPipeline();
 
@@ -171,6 +200,22 @@ private:
 
 	/** @brief Create the semaphores */
 	void CreateSemaphores();
+
+	/* --------------- Descriptor Functions --------------- */
+
+	/** @brief Create the Uniform Buffers */
+	void CreateUniformBuffers();
+
+	/** @brief Create the Descriptor Pool */
+	void CreateDescriptorPool();
+
+	/** @brief Create the Descriptor Sets */
+	void CreateDescriptorSets();
+
+	/* --------------- Uniform Buffer Functions --------------- */
+
+	/** @brief Update the Uniform Buffers */
+	void UpdateUniformBuffer(uint32_t imageIndex);
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Record Functions +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
