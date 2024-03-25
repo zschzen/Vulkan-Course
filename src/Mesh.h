@@ -18,7 +18,7 @@ class Mesh
 public:
 
 	Mesh() = default;
-	Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice,
+	Mesh(const device_t &devices,
 		 VkQueue transferQueue, VkCommandPool transferCommandPool,
 		 std::vector<vertex_t> *vertices, std::vector<uint32_t> *indices);
 	~Mesh();
@@ -41,18 +41,17 @@ public:
 private:
 
 	// Vertex buffer
-	int vertexCount                   {0}; // < The number of vertices in the mesh
-	VkBuffer vertexBuffer             { }; // < The vertex buffer
-	VkDeviceMemory vertexBufferMemory { }; // < The memory used to store the vertex buffer
+	int m_vertexCount                   {0}; // < The number of vertices in the mesh
+	VkBuffer m_vertexBuffer             { }; // < The vertex buffer
+	VkDeviceMemory m_vertexBufferMemory { }; // < The memory used to store the vertex buffer
 
 	// Index buffer
-	int indexCount                    {0}; // < The number of indices in the mesh
-	VkBuffer indexBuffer              { }; // < The index buffer
-	VkDeviceMemory indexBufferMemory  { }; // < The memory used to store the index buffer
+	int m_indexCount                    {0}; // < The number of indices in the mesh
+	VkBuffer m_indexBuffer              { }; // < The index buffer
+	VkDeviceMemory m_indexBufferMemory  { }; // < The memory used to store the index buffer
 
 	// Vulkan device
-	VkPhysicalDevice physicalDevice   { }; // < The physical device used to create the vertex buffer
-	VkDevice device                   { }; // < The logical device used to create the vertex buffer
+	device_t m_devices { VK_NULL_HANDLE };
 
 
 	/**
@@ -76,35 +75,35 @@ private:
 FORCE_INLINE int
 Mesh::GetVertexCount() const
 {
-	return vertexCount;
+	return m_vertexCount;
 }
 
 FORCE_INLINE VkBuffer
 Mesh::GetVertexBuffer() const
 {
-	return vertexBuffer;
+	return m_vertexBuffer;
 }
 
 FORCE_INLINE int
 Mesh::GetIndexCount() const
 {
-	return indexCount;
+	return m_indexCount;
 }
 
 FORCE_INLINE VkBuffer
 Mesh::GetIndexBuffer() const
 {
-	return indexBuffer;
+	return m_indexBuffer;
 }
 
 FORCE_INLINE void
 Mesh::DestroyVertexBuffer()
 {
-	vkDestroyBuffer(device, vertexBuffer, nullptr);
-	vkFreeMemory(device, vertexBufferMemory, nullptr);
+	vkDestroyBuffer(m_devices.logicalDevice, m_vertexBuffer, nullptr);
+	vkFreeMemory(m_devices.logicalDevice, m_vertexBufferMemory, nullptr);
 
-	vkDestroyBuffer(device, indexBuffer, nullptr);
-	vkFreeMemory(device, indexBufferMemory, nullptr);
+	vkDestroyBuffer(m_devices.logicalDevice, m_indexBuffer, nullptr);
+	vkFreeMemory(m_devices.logicalDevice, m_indexBufferMemory, nullptr);
 }
 
 #endif //VULKAN_COURSE_MESH_H

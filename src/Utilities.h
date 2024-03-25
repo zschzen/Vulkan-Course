@@ -60,6 +60,16 @@ const std::vector<const char *> deviceExtensions =
 // ======================================================================================================================
 
 /**
+ * @struct device_t
+ * @brief Contains the physical and logical devices
+ */
+typedef struct device_t
+{
+	VkPhysicalDevice physicalDevice {VK_NULL_HANDLE};
+	VkDevice         logicalDevice  {VK_NULL_HANDLE};
+} device_t;
+
+/**
  * @struct queueFamilyIndices_t
  * @brief Contains the indices of the queue families
  * @details The indices (locations) of Queue Families (if they exist at all)
@@ -256,8 +266,7 @@ FindMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemo
 /**
  * @brief Create a buffer
  *
- * @param physicalDevice The physical device to use
- * @param device The logical device to use
+ * @param device The wrapper for the physical and logical devices
  * @param bufferSize The size of the buffer
  * @param bufferUsage The buffer usage flags
  * @param memoryProperties The memory properties
@@ -267,7 +276,7 @@ FindMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemo
  * @return The buffer and its memory
  */
 static void
-CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage,
+CreateBuffer(const device_t &devices, VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage,
 			 VkMemoryPropertyFlags bufferProperties, VkBuffer * buffer, VkDeviceMemory * bufferMemory)
 {
 
@@ -281,12 +290,12 @@ CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize buff
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE        // Similar to Swap Chain images, can share vertex buffers
 	};
 
-	VK_CHECK(vkCreateBuffer(device, &bufferInfo, nullptr, buffer), "Failed to create a buffer!");
+	VK_CHECK(vkCreateBuffer(devices.logicalDevice, &bufferInfo, nullptr, buffer), "Failed to create a buffer!");
 
 	/* ----------------------------------------- Get Buffer Memory Requirements ----------------------------------------- */
 
 	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(device, *buffer, &memRequirements);
+	vkGetBufferMemoryRequirements(devices.logicalDevice, *buffer, &memRequirements);
 
 	/* ----------------------------------------- Allocate Memory to Buffer ----------------------------------------- */
 
@@ -295,12 +304,12 @@ CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize buff
 	{
 		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		.allocationSize = memRequirements.size,
-		.memoryTypeIndex = FindMemoryTypeIndex(physicalDevice, memRequirements.memoryTypeBits,		// Index of memory type on Physical Device that has required bit flags
+		.memoryTypeIndex = FindMemoryTypeIndex(devices.physicalDevice, memRequirements.memoryTypeBits,		// Index of a memory type on a Physical Device that has required bit flags
 											   bufferProperties)
 	};
 
-	VK_CHECK(vkAllocateMemory(device, &memoryAllocInfo, nullptr, bufferMemory), "Failed to allocate buffer memory!");
-	VK_CHECK(vkBindBufferMemory(device, *buffer, *bufferMemory, 0), "Failed to bind buffer memory!");
+	VK_CHECK(vkAllocateMemory(devices.logicalDevice, &memoryAllocInfo, nullptr, bufferMemory), "Failed to allocate buffer memory!");
+	VK_CHECK(vkBindBufferMemory(devices.logicalDevice, *buffer, *bufferMemory, 0), "Failed to bind buffer memory!");
 }
 
 /**
