@@ -1,3 +1,6 @@
+#include <chrono>
+#include <thread>
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -33,10 +36,43 @@ main()
 
 	// Main loop
 	{
+		// model
+		float angle = 0.0f;
+
+		// Time
+		int maxFPS = 60;
+		double deltaTime = 0.0f;
+		double lastTime = 0.0f;
+		double currentTime = 0.0f;
+		double desiredFrameTime = 1.0f / maxFPS;
+
 		bool isRunning = true;
 		while (isRunning && !glfwWindowShouldClose(window))
 		{
-			// ----------------- Input ----------------
+			// ------------------------------------------- Time -------------------------------------------
+			currentTime = glfwGetTime();
+			deltaTime = currentTime - lastTime;
+
+			// Limit FPS
+			if (deltaTime < desiredFrameTime)
+			{
+				int sleepTime = static_cast<int>((desiredFrameTime - deltaTime) * 1000);
+				if (sleepTime > 0)
+				{
+					std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
+				}
+			}
+
+			// Update the previous frame time
+			lastTime = currentTime;
+
+			// update glfw title
+			{
+				std::string fps = std::format("{:.2f}", 1.0 / deltaTime);
+				glfwSetWindowTitle(window, ("Vulkan Window - FPS: " + fps).c_str());
+			}
+
+			// ------------------------------------------- Input -------------------------------------------
 			glfwPollEvents();
 
 			if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -45,9 +81,14 @@ main()
 				glfwSetWindowShouldClose(window, GLFW_TRUE);
 			}
 
-			// ----------------- Update -----------------
+			// ------------------------------------------- Update -------------------------------------------
 
-			// ----------------- Draw -----------------
+			// Rotate model based on deltaTime
+			angle += std::fmod(45.0f * static_cast<float>(deltaTime), 360.0f);
+			glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+			vulkanRenderer.UpdateModel(rotation);
+
+			// ------------------------------------------- Render -------------------------------------------
 			vulkanRenderer.Draw();
 		}
 	}
