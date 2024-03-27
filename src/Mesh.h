@@ -8,6 +8,15 @@
 
 #include "Utilities.h"
 
+/**
+ * @struct ubo_model_t
+ * @brief Holds the model data
+ */
+typedef struct ubo_model_
+{
+	glm::mat4 model;
+} ubo_model_t;
+
 
 /**
  * @class Mesh
@@ -24,16 +33,22 @@ public:
 	~Mesh();
 
 	/** @brief Get the number of vertices in the mesh */
-	int GetVertexCount() const;
+	[[nodiscard]] int GetVertexCount() const;
 
 	/** @brief Get the vertex buffer */
-	VkBuffer GetVertexBuffer() const;
+	[[nodiscard]] VkBuffer GetVertexBuffer() const;
 
 	/** @brief Get the number of indices in the mesh */
-	int GetIndexCount() const;
+	[[nodiscard]] int GetIndexCount() const;
 
 	/** @brief Get the index buffer */
-	VkBuffer GetIndexBuffer() const;
+	[[nodiscard]] VkBuffer GetIndexBuffer() const;
+
+	/** @brief Get the model data */
+	[[nodiscard]] ubo_model_t GetModel() const;
+
+	/** @brief Set the model data */
+	void SetModel(glm::mat4 model);
 
 	/** @brief Destroy the vertex buffer */
 	void DestroyVertexBuffer();
@@ -41,18 +56,20 @@ public:
 private:
 
 	// Vertex buffer
-	int m_vertexCount                   {0}; // < The number of vertices in the mesh
-	VkBuffer m_vertexBuffer             { }; // < The vertex buffer
-	VkDeviceMemory m_vertexBufferMemory { }; // < The memory used to store the vertex buffer
+	int m_vertexCount                   { 0 }; // < The number of vertices in the mesh
+	VkBuffer m_vertexBuffer             {   }; // < The vertex buffer
+	VkDeviceMemory m_vertexBufferMemory {   }; // < The memory used to store the vertex buffer
 
 	// Index buffer
-	int m_indexCount                    {0}; // < The number of indices in the mesh
-	VkBuffer m_indexBuffer              { }; // < The index buffer
-	VkDeviceMemory m_indexBufferMemory  { }; // < The memory used to store the index buffer
+	int m_indexCount                    { 0 }; // < The number of indices in the mesh
+	VkBuffer m_indexBuffer              {   }; // < The index buffer
+	VkDeviceMemory m_indexBufferMemory  {   }; // < The memory used to store the index buffer
 
 	// Vulkan device
 	device_t m_devices { VK_NULL_HANDLE };
 
+	// Model data
+	ubo_model_t m_uboModel { .model = glm::mat4(1.0f) };
 
 	/**
 	 * @brief Create the vertex buffer
@@ -94,6 +111,18 @@ FORCE_INLINE VkBuffer
 Mesh::GetIndexBuffer() const
 {
 	return m_indexBuffer;
+}
+
+FORCE_INLINE void
+Mesh::SetModel(glm::mat4 model)
+{
+	m_uboModel.model = model;
+}
+
+FORCE_INLINE ubo_model_t
+Mesh::GetModel() const
+{
+	return m_uboModel;
 }
 
 FORCE_INLINE void
