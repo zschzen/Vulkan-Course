@@ -84,9 +84,19 @@ main()
 			// ------------------------------------------- Update -------------------------------------------
 
 			// Rotate model based on deltaTime
-			angle += std::fmod(45.0f * static_cast<float>(deltaTime), 360.0f);
-			glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
-			vulkanRenderer.UpdateModel(rotation);
+			angle += std::fmod(45.0f * static_cast<float>(deltaTime), 360.0F);
+
+			glm::mat4 firstModel  = glm::mat4(1.0F);
+			glm::mat4 secondModel = glm::mat4(1.0F);
+
+			firstModel = glm::translate(firstModel, glm::vec3(-2.0F, 0.0F, -5.0F));
+			firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0F, 0.0F, 1.0F));
+
+			secondModel = glm::translate(secondModel, glm::vec3(2.0F, 0.0F, -5.0F));
+			secondModel = glm::rotate(secondModel, glm::radians(-angle * 10), glm::vec3(0.0F, 0.0F, 1.0F));
+
+			vulkanRenderer.UpdateModel(0, firstModel);
+			vulkanRenderer.UpdateModel(1, secondModel);
 
 			// ------------------------------------------- Render -------------------------------------------
 			vulkanRenderer.Draw();
