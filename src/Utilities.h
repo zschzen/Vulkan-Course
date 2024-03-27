@@ -40,6 +40,19 @@ do                                     \
 	}                                  \
 } while (0)
 
+/// Memory aligned allocation
+#ifndef ALIGNED_ALLOC
+	#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__)
+		#define ALIGNED_ALLOC(size, alignment) _aligned_malloc(size, alignment)
+		#define ALIGNED_FREE(ptr) _aligned_free(ptr)
+	#elif defined(__GNUC__)
+		#define ALIGNED_ALLOC(size, alignment) aligned_alloc(alignment, size)
+		#define ALIGNED_FREE(ptr) free(ptr)
+	#else
+		#error "Is aligned allocation supported on this platform?"
+	#endif
+#endif
+
 
 // ======================================================================================================================
 // ============================================ Vulkan Constants ========================================================
@@ -47,6 +60,9 @@ do                                     \
 
 /** @brief The maximum number of frames that can be in flight */
 constexpr int MAX_FRAME_DRAWS = 3;
+
+/** @brief The maximum number of objects in the scene */
+constexpr int MAX_OBJECTS     = 256;
 
 /** @brief The device extensions required by this application */
 const std::vector<const char *> deviceExtensions =
