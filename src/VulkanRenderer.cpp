@@ -161,14 +161,14 @@ VulkanRenderer::Draw()
 	// Queue submission information
 	VkSubmitInfo submitInfo =
 	{
-		.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.waitSemaphoreCount = 1,                                          // Number of semaphores to wait on
-		.pWaitSemaphores    = &m_imageAvailableSemaphore[m_currentFrame], // Semaphores to wait on
-		.pWaitDstStageMask  = waitStages.data(),                       // Semaphores to wait on
-		.commandBufferCount = 1,
-		.pCommandBuffers    = &m_commandBuffers[imageIndex],          // Command buffer to submit
-		.signalSemaphoreCount = 1,                                    // Number of semaphores to signal
-		.pSignalSemaphores    = &m_renderFinishedSemaphore[m_currentFrame] // Semaphores to signal
+		.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.waitSemaphoreCount   = 1,                                          // Number of semaphores to wait on
+		.pWaitSemaphores      = &m_imageAvailableSemaphore[m_currentFrame], // Semaphores to wait on
+		.pWaitDstStageMask    = waitStages.data(),                          // Semaphores to wait on
+		.commandBufferCount   = 1,
+		.pCommandBuffers      = &m_commandBuffers[imageIndex],              // Command buffer to submit
+		.signalSemaphoreCount = 1,                                          // Number of semaphores to signal
+		.pSignalSemaphores    = &m_renderFinishedSemaphore[m_currentFrame]  // Semaphores to signal
 	};
 
 	// Submit command buffer to queue
@@ -181,11 +181,11 @@ VulkanRenderer::Draw()
 	VkPresentInfoKHR presentInfo =
 	{
 		.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-		.waitSemaphoreCount = 1,                              // Number of semaphores to wait on
+		.waitSemaphoreCount = 1,                                          // Number of semaphores to wait on
 		.pWaitSemaphores    = &m_renderFinishedSemaphore[m_currentFrame], // Semaphores to wait on
-		.swapchainCount     = 1,                              // Number of swapchains to present to
-		.pSwapchains        = &m_swapchain,                    // Swapchains to present images to
-		.pImageIndices      = &imageIndex             // Index of images in swapchains to present
+		.swapchainCount     = 1,                                          // Number of swapchains to present to
+		.pSwapchains        = &m_swapchain,                               // Swapchains to present images to
+		.pImageIndices      = &imageIndex                                 // Index of images in swapchains to present
 	};
 
 	// Present image
@@ -1190,12 +1190,10 @@ VulkanRenderer::RecordCommands()
 		.pInheritanceInfo = nullptr                             // Secondary command buffer details
 	};
 
-	std::array<VkClearValue, 1> clearValues =
+	std::vector<VkClearValue> clearValues =
 	{
 		{
-			{
-				.color = {0.16F, 0.16F, 0.21F, 1.0F}     // Dracula Background Colour
-			}
+			.color = {0.16F, 0.16F, 0.21F, 1.0F}     // Dracula Background Colour
 		}
 	};
 
@@ -1206,8 +1204,8 @@ VulkanRenderer::RecordCommands()
 		.renderPass        = m_renderPass,                               // Render Pass to begin recording commands for
 		.renderArea        =                                             // Size of region to render to (starting point)
 		{
-			.offset = { 0, 0 },                                          // Offset to start rendering at (in pixels)
-			.extent = m_swapChainExtent                                  // Extent to render
+			.offset        = { 0, 0 },                                   // Offset to start rendering at (in pixels)
+			.extent        = m_swapChainExtent                           // Extent to render
 		},
 		.clearValueCount   = static_cast<uint32_t>(clearValues.size()),  // Number of clear values to clear the attachments
 		.pClearValues      = clearValues.data()                          // Clear values to use for clear the attachments
