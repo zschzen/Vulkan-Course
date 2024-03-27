@@ -49,7 +49,7 @@ public:
 	void Cleanup();
 
 	/** @brief Updates the model */
-	void UpdateModel(glm::mat4 newModel) { m_ubo.model = newModel; }
+	void UpdateModel(uint32_t modelID, glm::mat4 newModel);
 
 private:
 
@@ -71,12 +71,11 @@ private:
 	std::vector<Mesh> m_meshList { };
 
 	/** @brief Scene settings */
-	struct mvp_t
+	struct ubo_view_proj_t
 	{
 		glm::mat4 proj;
 		glm::mat4 view;
-		glm::mat4 model;
-	} m_ubo { 0 };
+	} m_ubo_vp { 0 };
 
 	// ======================================================================================================================
 	// ============================================ Vulkan Components =======================================================
@@ -111,8 +110,15 @@ private:
 	VkDescriptorPool m_descriptorPool                  { VK_NULL_HANDLE };
 	std::vector<VkDescriptorSet> m_descriptorSets      {  };
 
-	std::vector<VkBuffer>       m_uniformBuffers       {  };
-	std::vector<VkDeviceMemory> m_uniformBuffersMemory {  };
+	std::vector<VkBuffer>       m_vpUniformBuffers       {  };
+	std::vector<VkDeviceMemory> m_vpUniformBuffersMemory {  };
+
+	std::vector<VkBuffer>       m_modelDUniformBuffers       {  };
+	std::vector<VkDeviceMemory> m_modelDUniformBuffersMemory {  };
+
+	VkDeviceSize     m_minUniformBufferOffset { 0 };
+	size_t           m_modelUniformAlignment  { 0 };
+	ubo_model_t     *m_modelTransferSpace     { nullptr };
 
 	// +++++++++++++++++++++++++++++++++++++++++++++++ Pools +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -142,10 +148,10 @@ private:
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Utility Components +++++++++++++++++++++++++++++++++++++++++++++++++++
 
-	VkFormat         m_swapChainImageFormat { };
-	VkExtent2D       m_swapChainExtent      { };
+	VkFormat         m_swapChainImageFormat   {   };
+	VkExtent2D       m_swapChainExtent        {   };
 
-	function_queue_t m_mainDeletionQueue    { };
+	function_queue_t m_mainDeletionQueue      {   };
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Sync Components +++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -215,7 +221,7 @@ private:
 	/* --------------- Uniform Buffer Functions --------------- */
 
 	/** @brief Update the Uniform Buffers */
-	void UpdateUniformBuffer(uint32_t imageIndex);
+	void UpdateUniformBuffers(uint32_t imageIndex);
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Record Functions +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -233,6 +239,10 @@ private:
 	/** @brief Get the required extensions for the Vulkan Instance */
 	void GetPhysicalDevice();
 
+	// ++++++++++++++++++++++++++++++++++++++++++++++ Allocate Functions ++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	/** @brief Allocate a dynamic buffer */
+	void AllocateDynamicBufferTransferSpace();
 
 	// ======================================================================================================================
 	// ============================================ Vulkan Support Functions ================================================
@@ -335,5 +345,14 @@ private:
 	[[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<char> &code) const;
 
 };
+
+
+FORCE_INLINE void
+VulkanRenderer::UpdateModel(uint32_t modelID, glm::mat4 newModel)
+{
+	if (modelID >= m_meshList.size()) return;
+
+	m_meshList[modelID].SetModel(newModel);
+}
 
 #endif //VULKANRENDERER_H
