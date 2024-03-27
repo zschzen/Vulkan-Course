@@ -1459,6 +1459,7 @@ VulkanRenderer::TryCheckDeviceExtensionSupport(VkPhysicalDevice device, std::str
 bool
 VulkanRenderer::CheckDeviceSuitable(VkPhysicalDevice device)
 {
+	/*
 	// Information about the device itself (ID, name, type, vendor, etc)
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(device, &deviceProperties);
@@ -1466,6 +1467,7 @@ VulkanRenderer::CheckDeviceSuitable(VkPhysicalDevice device)
 	// Information about what the device can do (geo shader, tess shader, wide lines, etc)
 	VkPhysicalDeviceFeatures deviceFeatures;
 	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+	 */
 
 	// Check if the device supports the required extensions
 	{
