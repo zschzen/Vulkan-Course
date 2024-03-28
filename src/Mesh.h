@@ -9,13 +9,13 @@
 #include "Utilities.h"
 
 /**
- * @struct ubo_model_t
+ * @struct model_t
  * @brief Holds the model data
  */
-typedef struct ubo_model_
+typedef struct model_
 {
-	glm::mat4 model;
-} ubo_model_t;
+	glm::mat4 mat;
+} model_t;
 
 
 /**
@@ -45,7 +45,7 @@ public:
 	[[nodiscard]] VkBuffer GetIndexBuffer() const;
 
 	/** @brief Get the model data */
-	[[nodiscard]] ubo_model_t GetModel() const;
+	[[nodiscard]] model_t GetModel() const;
 
 	/** @brief Set the model data */
 	void SetModel(glm::mat4 model);
@@ -69,7 +69,7 @@ private:
 	device_t m_devices { VK_NULL_HANDLE };
 
 	// Model data
-	ubo_model_t m_uboModel { .model = glm::mat4(1.0f) };
+	model_t m_model { .mat = glm::mat4(1.0f) };
 
 	/**
 	 * @brief Create the vertex buffer
@@ -116,13 +116,13 @@ Mesh::GetIndexBuffer() const
 FORCE_INLINE void
 Mesh::SetModel(glm::mat4 model)
 {
-	m_uboModel.model = model;
+	m_model.mat = model;
 }
 
-FORCE_INLINE ubo_model_t
+FORCE_INLINE model_t
 Mesh::GetModel() const
 {
-	return m_uboModel;
+	return m_model;
 }
 
 FORCE_INLINE void

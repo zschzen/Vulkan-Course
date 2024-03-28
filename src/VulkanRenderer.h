@@ -106,6 +106,9 @@ private:
 	 */
 	VkDescriptorSetLayout m_descriptorSetLayout { VK_NULL_HANDLE };
 
+	/** @brief Push constant range */
+	VkPushConstantRange m_pushConstantRange {  };
+
 	/** @brief Descriptor pool is used to allocate descriptor sets to write descriptors into. */
 	VkDescriptorPool m_descriptorPool                  { VK_NULL_HANDLE };
 	std::vector<VkDescriptorSet> m_descriptorSets      {  };
@@ -113,12 +116,14 @@ private:
 	std::vector<VkBuffer>       m_vpUniformBuffers       {  };
 	std::vector<VkDeviceMemory> m_vpUniformBuffersMemory {  };
 
+	// ++++++++++++++++++++++++++++++++++++++++++++++ Dynamic Uniform Buffers +++++++++++++++++++++++++++++++++++++++++++++
+
 	std::vector<VkBuffer>       m_modelDUniformBuffers       {  };
 	std::vector<VkDeviceMemory> m_modelDUniformBuffersMemory {  };
 
-	VkDeviceSize     m_minUniformBufferOffset { 0 };
-	size_t           m_modelUniformAlignment  { 0 };
-	ubo_model_t     *m_modelTransferSpace     { nullptr };
+	//VkDeviceSize     m_minUniformBufferOffset { 0 };
+	//size_t           m_modelUniformAlignment  { 0 };
+	//ubo_model_t     *m_modelTransferSpace     { nullptr };
 
 	// +++++++++++++++++++++++++++++++++++++++++++++++ Pools +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -192,6 +197,9 @@ private:
 	/** @brief Create the descriptor set layout */
 	void CreateDescriptorSetLayout();
 
+	/** @brief Create the push constant range */
+	void CreatePushConstantRange();
+
 	/** @brief Create the Graphics Pipeline */
 	void CreateGraphicsPipeline();
 
@@ -226,7 +234,7 @@ private:
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Record Functions +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	/** @brief Record the command buffers */
-	void RecordCommands();
+	void RecordCommands(VkCommandBuffer commandBuffer, uint32_t currImage);
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Get Functions ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
