@@ -51,6 +51,12 @@ public:
 	/** @brief Updates the model */
 	void UpdateModel(uint32_t modelID, glm::mat4 newModel);
 
+	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height)
+	{
+		auto app = reinterpret_cast<VulkanRenderer*>(glfwGetWindowUserPointer(window));
+		app->m_framebufferResized = true;
+	}
+
 private:
 
 	// ======================================================================================================================
@@ -62,6 +68,9 @@ private:
 
 	/** @brief The current frame */
 	uint32_t m_currentFrame {0};
+
+	/** @brief Is frame buffer resized */
+	uint8_t m_framebufferResized : 1 {0};
 
 	// ======================================================================================================================
 	// ============================================ Scene Components ========================================================
@@ -118,8 +127,8 @@ private:
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Dynamic Uniform Buffers +++++++++++++++++++++++++++++++++++++++++++++
 
-	std::vector<VkBuffer>       m_modelDUniformBuffers       {  };
-	std::vector<VkDeviceMemory> m_modelDUniformBuffersMemory {  };
+	//std::vector<VkBuffer>       m_modelDUniformBuffers       {  };
+	//std::vector<VkDeviceMemory> m_modelDUniformBuffersMemory {  };
 
 	//VkDeviceSize     m_minUniformBufferOffset { 0 };
 	//size_t           m_modelUniformAlignment  { 0 };
@@ -191,6 +200,9 @@ private:
 	/** @brief Create the swap chain */
 	void CreateSwapChain();
 
+	/** @brief Recreate the swap chain */
+	void RecreateSwapChain();
+
 	/** @brief Create the render pass */
 	void CreateRenderPass();
 
@@ -251,6 +263,11 @@ private:
 
 	/** @brief Allocate a dynamic buffer */
 	void AllocateDynamicBufferTransferSpace();
+
+	// ++++++++++++++++++++++++++++++++++++++++++++++ Cleanup Functions +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	/** @brief Cleanup the swap chain */
+	void CleanupSwapChain();
 
 	// ======================================================================================================================
 	// ============================================ Vulkan Support Functions ================================================

@@ -76,7 +76,7 @@ VkResultToString(VkResult err)
 do                                     \
 {                                      \
 	VkResult err = x;                  \
-	if (err != VK_SUCCESS)   \
+	if (err)   \
 	{                                  \
 		const char* errStr = VkResultToString(err); \
 		fprintf(stderr, "!------------ Vulkan Error ------------!\n"); \

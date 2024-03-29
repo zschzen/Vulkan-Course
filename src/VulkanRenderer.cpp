@@ -172,12 +172,18 @@ VulkanRenderer::Draw()
 	};
 
 	// Present image
-	VK_CHECK(vkQueuePresentKHR(m_presentationQueue, &presentInfo), "Failed to present Image!");
+	VkResult presentResult = vkQueuePresentKHR(m_presentationQueue, &presentInfo);
+	if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR || m_framebufferResized)
+	{
+		m_framebufferResized = false;
+		RecreateSwapChain();
+	}
 
 	// Increment current frame (limited by MAX_FRAME_DRAWS)
 	m_currentFrame = (m_currentFrame + 1) % MAX_FRAME_DRAWS;
 }
 
+// TODO: Get rid off deletion queues and use arrays of vulkan handles
 void
 VulkanRenderer::Cleanup()
 {
@@ -186,6 +192,28 @@ VulkanRenderer::Cleanup()
 	// Wait for a logical device to finish before cleanup
 	vkDeviceWaitIdle(m_mainDevice.logicalDevice);
 
+	// Clean up uniform buffers
+	{
+		for (size_t i = 0; i < m_swapChainImages.size(); ++i)
+		{
+			vkDestroyBuffer(m_mainDevice.logicalDevice, m_vpUniformBuffers[i], nullptr);
+			vkFreeMemory(m_mainDevice.logicalDevice, m_vpUniformBuffersMemory[i], nullptr);
+
+			//vkDestroyBuffer(m_mainDevice.logicalDevice, m_modelDUniformBuffers[i], nullptr);
+			//vkFreeMemory(m_mainDevice.logicalDevice, m_modelDUniformBuffersMemory[i], nullptr);
+		}
+
+		m_vpUniformBuffers.clear();
+		m_vpUniformBuffersMemory.clear();
+
+		//m_modelDUniformBuffers.clear();
+		//m_modelDUniformBuffersMemory.clear();
+	}
+
+	// Clean up swap chain
+	CleanupSwapChain();
+
+	// Clean up the leftovers
 	m_mainDeletionQueue.flush();
 }
 
@@ -442,19 +470,28 @@ VulkanRenderer::CreateSwapChain()
 		// Store image and image view
 		m_swapChainImages.push_back(swapChainImage);
 	}
+}
 
-	// Add swap chain to deletion queue
-	m_mainDeletionQueue.push_function([&]() -> void
+void
+VulkanRenderer::RecreateSwapChain()
+{
+	// Get the size of the window
+	int width = 0, height = 0;
+	glfwGetFramebufferSize(m_window, &width, &height);
+	while (width == 0 || height == 0)
 	{
-		for (const auto &image : m_swapChainImages)
-		{
-			vkDestroyImageView(m_mainDevice.logicalDevice, image.imageView, nullptr);
-		}
-		m_swapChainImages.clear();
+		glfwGetFramebufferSize(m_window, &width, &height);
+		glfwWaitEvents();
+	}
 
-		vkDestroySwapchainKHR(m_mainDevice.logicalDevice, m_swapchain, nullptr);
-		m_swapchain = VK_NULL_HANDLE;
-	});
+	// Wait for logical device to finish before continuing
+	vkDeviceWaitIdle(m_mainDevice.logicalDevice);
+
+	CleanupSwapChain();
+
+	// Recreate the swap chain
+	CreateSwapChain();
+	CreateFramebuffers();
 }
 
 void
@@ -940,16 +977,6 @@ VulkanRenderer::CreateFramebuffers()
 									 &m_swapChainFramebuffers[i]),
 				 "Failed to create a Framebuffer!");
 	}
-
-	// Add framebuffers to deletion queue
-	m_mainDeletionQueue.push_function([&]() -> void
-	{
-		for (const auto &framebuffer : m_swapChainFramebuffers)
-		{
-			vkDestroyFramebuffer(m_mainDevice.logicalDevice, framebuffer, nullptr);
-		}
-		m_swapChainFramebuffers.clear();
-	});
 }
 
 void
@@ -1080,25 +1107,6 @@ VulkanRenderer::CreateUniformBuffers()
 					 &m_modelDUniformBuffers[i], &m_modelDUniformBuffersMemory[i]);
 		*/
 	}
-
-	// Add to deletion queue
-	m_mainDeletionQueue.push_function([&]() -> void
-	{
-		for (size_t i = 0; i < m_swapChainImages.size(); ++i)
-		{
-		  vkDestroyBuffer(m_mainDevice.logicalDevice, m_vpUniformBuffers[i], nullptr);
-		  vkFreeMemory(m_mainDevice.logicalDevice, m_vpUniformBuffersMemory[i], nullptr);
-
-		  //vkDestroyBuffer(m_mainDevice.logicalDevice, m_modelDUniformBuffers[i], nullptr);
-		  //vkFreeMemory(m_mainDevice.logicalDevice, m_modelDUniformBuffersMemory[i], nullptr);
-		}
-
-		m_vpUniformBuffers.clear();
-		m_vpUniformBuffersMemory.clear();
-
-		//m_modelDUniformBuffers.clear();
-		//m_modelDUniformBuffersMemory.clear();
-	});
 }
 
 void
@@ -1483,6 +1491,25 @@ VulkanRenderer::AllocateDynamicBufferTransferSpace()
 		ALIGNED_FREE(m_modelTransferSpace);
 	});
 	*/
+}
+
+void
+VulkanRenderer::CleanupSwapChain()
+{
+	// Clean up previous swap chain
+	for (const auto &framebuffer : m_swapChainFramebuffers)
+	{
+		vkDestroyFramebuffer(m_mainDevice.logicalDevice, framebuffer, nullptr);
+	}
+	m_swapChainFramebuffers.clear();
+
+	for (const auto &image : m_swapChainImages)
+	{
+		vkDestroyImageView(m_mainDevice.logicalDevice, image.imageView, nullptr);
+	}
+	m_swapChainImages.clear();
+
+	vkDestroySwapchainKHR(m_mainDevice.logicalDevice, m_swapchain, nullptr);
 }
 
 

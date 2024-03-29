@@ -23,13 +23,17 @@ InitWindow(const std::string &wName = "Vulkan Window", const int width = 800, co
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 	window = glfwCreateWindow(width, height, wName.c_str(), nullptr, nullptr);
+
+	// Set the Vulkan Renderer pointer to the window
+	glfwSetWindowUserPointer(window, &vulkanRenderer);
+	glfwSetFramebufferSizeCallback(window, VulkanRenderer::FramebufferResizeCallback);
 }
 
 int
 main()
 {
 	// Window setup
-	InitWindow("Vulkan Window", 800, 600);
+	InitWindow("Vulkan Window", 480, 272);
 
 	// Try to create Vulkan Instance
 	if (vulkanRenderer.Init(window) != EXIT_SUCCESS) return EXIT_FAILURE;
