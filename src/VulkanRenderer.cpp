@@ -38,7 +38,6 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 
 		// Command Pool and Buffer Setup
 		CreateCommandPool();
-		CreateCommandBuffers();
 
 		// Set up the UBOs
 		{
@@ -53,7 +52,7 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 		{
 			std::vector<vertex_t> meshVertices =
 			{
-				{ { -0.4, 0.4, 0.0 }, { 1.0f, 0.0f, 0.0f } },
+				{ { -0.4,  0.4, 0.0 }, { 1.0f, 0.0f, 0.0f } },
 				{ { -0.4, -0.4, 0.0 }, { 0.0f, 1.0f, 0.0f } },
 				{ {  0.4, -0.4, 0.0 }, { 0.0f, 0.0f, 1.0f } },
 				{ {  0.4,  0.4, 0.0 }, { 1.0f, 1.0f, 0.0f } },
@@ -61,10 +60,10 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 
 			std::vector<vertex_t> meshVertices2 =
 			{
-				{ { -0.25,  0.6, 0.0 }, { 1.0f, 1.0f, 0.0f } },
-				{ { -0.25, -0.6, 0.0 }, { 0.0f, 0.0f, 1.0f } },
-				{ {  0.25, -0.6, 0.0 }, { 0.0f, 1.0f, 0.0f } },
-				{ {  0.25,  0.6, 0.0 }, { 1.0f, 0.0f, 0.0f } },
+					{ { -0.25,  0.6, 0.0 }, { 1.0f, 0.0f, 0.0f } },
+					{ { -0.25, -0.6, 0.0 }, { 0.0f, 1.0f, 0.0f } },
+					{ {  0.25, -0.6, 0.0 }, { 0.0f, 0.0f, 1.0f } },
+					{ {  0.25,  0.6, 0.0 }, { 1.0f, 1.0f, 0.0f } },
 			};
 
 			// Index Data
@@ -89,6 +88,7 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 			});
 		}
 
+		CreateCommandBuffers();
 		// Create Uniform Buffers
 		//AllocateDynamicBufferTransferSpace(); // Create transfer space for dynamic uniform data. Unneeded for Push Constants
 		CreateUniformBuffers();
@@ -113,9 +113,11 @@ VulkanRenderer::Draw()
 	/* ----------------------------------------- GET NEXT IMAGE ----------------------------------------- */
 
 	// Wait for given fence to signal (open) from the last draw before continuing
-	vkWaitForFences(m_mainDevice.logicalDevice, 1, &m_drawFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+	VK_CHECK(vkWaitForFences(m_mainDevice.logicalDevice, 1, &m_drawFences[m_currentFrame], VK_TRUE, UINT64_MAX),
+			 "Failed to wait for a fence to signal that it is available for re-use");
 	// Manually reset (close) fences
-	vkResetFences(m_mainDevice.logicalDevice, 1, &m_drawFences[m_currentFrame]);
+	VK_CHECK(vkResetFences(m_mainDevice.logicalDevice, 1, &m_drawFences[m_currentFrame]),
+			 "Failed to reset fences!");
 
 
 	/* ----------------------------------------- FRAME BUFFER CREATION ----------------------------------------- */
@@ -1261,8 +1263,6 @@ VulkanRenderer::UpdateUniformBuffers(uint32_t imageIndex)
 void
 VulkanRenderer::RecordCommands(VkCommandBuffer commandBuffer, uint32_t currImage)
 {
-	vkQueueWaitIdle(m_graphicsQueue);
-
 	// Command buffer details
 	VkCommandBufferBeginInfo bufferBeginInfo =
 	{
@@ -1272,7 +1272,7 @@ VulkanRenderer::RecordCommands(VkCommandBuffer commandBuffer, uint32_t currImage
 		.pInheritanceInfo = nullptr                             // Secondary command buffer details
 	};
 
-	VkClearValue clearColor = {{{0.16F, 0.16F, 0.21F, 1.0F}}}; // Dracula Background Colour
+	VkClearValue clearColor[] = { { 0.16F, 0.16F, 0.21F, 1.0F } }; // Dracula Background Colour
 
 	// Info about how to begin each render pass (only needed for graphical applications)
 	VkRenderPassBeginInfo renderPassBeginInfo =
@@ -1289,7 +1289,7 @@ VulkanRenderer::RecordCommands(VkCommandBuffer commandBuffer, uint32_t currImage
 		},
 
 		.clearValueCount   = 1,                                          // Number of clear values to clear the attachments
-		.pClearValues      = &clearColor                                 // Clear values to use for clear the attachments
+		.pClearValues      = clearColor                                 // Clear values to use for clear the attachments
 	};
 
 	// Framebuffer to use in the render pass
