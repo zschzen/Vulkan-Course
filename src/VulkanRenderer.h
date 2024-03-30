@@ -48,14 +48,11 @@ public:
 	/** @brief Cleans up the Vulkan Renderer */
 	void Cleanup();
 
+	/** @briefs Checks if the framebuffer was resized */
+	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
+
 	/** @brief Updates the model */
 	void UpdateModel(uint32_t modelID, glm::mat4 newModel);
-
-	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height)
-	{
-		auto app = reinterpret_cast<VulkanRenderer*>(glfwGetWindowUserPointer(window));
-		app->m_framebufferResized = true;
-	}
 
 private:
 
@@ -199,6 +196,9 @@ private:
 
 	/** @brief Create the swap chain */
 	void CreateSwapChain();
+
+	/** @brief Update the View and Projection UBOs */
+	void CreateViewProjUBO();
 
 	/** @brief Recreate the swap chain */
 	void RecreateSwapChain();
@@ -371,6 +371,18 @@ private:
 
 };
 
+
+
+// ======================================================================================================================
+// ============================================ Inline Functions ========================================================
+// ======================================================================================================================
+
+FORCE_INLINE void
+VulkanRenderer::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+	auto app = reinterpret_cast<VulkanRenderer*>(glfwGetWindowUserPointer(window));
+	app->m_framebufferResized = true;
+}
 
 FORCE_INLINE void
 VulkanRenderer::UpdateModel(uint32_t modelID, glm::mat4 newModel)

@@ -39,15 +39,6 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 		// Command Pool and Buffer Setup
 		CreateCommandPool();
 
-		// Set up the UBOs
-		{
-			m_ubo_vp.proj = glm::perspective(glm::radians(45.0f), (float)m_swapChainExtent.width / (float)m_swapChainExtent.height, 0.1f, 100.0f);
-			m_ubo_vp.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-			// Flip the Y coordinate. Vulkan has inverted Y coordinates compared to OpenGL
-			m_ubo_vp.proj[1][1] *= -1;
-		}
-
 		// Mesh Model Loading
 		{
 			std::vector<vertex_t> meshVertices =
@@ -97,6 +88,9 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 
 		// Semaphores and Fences
 		CreateSemaphores();
+
+		// Set up the UBOs
+		CreateViewProjUBO();
 	}
 	catch (const std::runtime_error &e)
 	{
@@ -473,6 +467,16 @@ VulkanRenderer::CreateSwapChain()
 }
 
 void
+VulkanRenderer::CreateViewProjUBO()
+{
+	m_ubo_vp.proj = glm::perspective(glm::radians(45.0f), (float)m_swapChainExtent.width / (float)m_swapChainExtent.height, 0.1f, 100.0f);
+	m_ubo_vp.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	// Flip the Y coordinate. Vulkan has inverted Y coordinates compared to OpenGL
+	m_ubo_vp.proj[1][1] *= -1;
+}
+
+void
 VulkanRenderer::RecreateSwapChain()
 {
 	// Get the size of the window
@@ -492,6 +496,8 @@ VulkanRenderer::RecreateSwapChain()
 	// Recreate the swap chain
 	CreateSwapChain();
 	CreateFramebuffers();
+
+	CreateViewProjUBO();
 }
 
 void
