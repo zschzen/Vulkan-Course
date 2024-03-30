@@ -11,6 +11,8 @@
 GLFWwindow *window;
 VulkanRenderer vulkanRenderer;
 
+// Prev position
+int prevX = 0; int prevY = 0;
 
 
 void
@@ -84,6 +86,31 @@ main()
 				isRunning = false;
 				glfwSetWindowShouldClose(window, GLFW_TRUE);
 			}
+
+			// ALT + ENTER to enter fullscreen
+			if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS)
+			{
+				// Get the current monitor the window is on
+				auto monitor = glfwGetWindowMonitor(window);
+				if (monitor == nullptr)
+				{
+					// Get the video mode of the primary monitor
+					auto primaryMonitor = glfwGetPrimaryMonitor();
+					const GLFWvidmode *mode = glfwGetVideoMode(primaryMonitor);
+
+					// Get the position of the window
+					glfwGetWindowPos(window, &prevX, &prevY);
+
+					// Set the window to fullscreen
+					glfwSetWindowMonitor(window, primaryMonitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+				}
+				else
+				{
+					// Set the window to windowed mode
+					glfwSetWindowMonitor(window, nullptr, prevX, prevY, 480, 272, 0);
+				}
+			}
+
 
 			// ------------------------------------------- Update -------------------------------------------
 
