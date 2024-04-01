@@ -17,6 +17,8 @@ target_sources(VulkanCourse PRIVATE ${VULKAN_COURSE_SOURCE_FILES} ${VULKAN_COURS
 target_include_directories(VulkanCourse PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(VulkanCourse PRIVATE vendor)
 
+#target_compile_definitions(VulkanCourse PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE)
+
 set_target_properties(VulkanCourse PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
