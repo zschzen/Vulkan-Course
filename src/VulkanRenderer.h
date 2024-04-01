@@ -100,9 +100,14 @@ private:
 
 	VkSwapchainKHR m_swapchain                { VK_NULL_HANDLE };
 
-	std::vector<swapchainImage_t> m_swapChainImages { };
-	std::vector<VkFramebuffer> m_swapChainFramebuffers { };
-	std::vector<VkCommandBuffer> m_commandBuffers { };
+	std::vector<swapchainImage_t> m_swapChainImages       { };
+	std::vector<VkFramebuffer>    m_swapChainFramebuffers { };
+	std::vector<VkCommandBuffer>  m_commandBuffers        { };
+
+	// Depth buffer
+	VkImage        m_depthBufferImage       { VK_NULL_HANDLE };
+	VkDeviceMemory m_depthBufferImageMemory { VK_NULL_HANDLE };
+	VkImageView    m_depthBufferImageView   { VK_NULL_HANDLE };
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Descriptors ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -162,6 +167,8 @@ private:
 	VkFormat         m_swapChainImageFormat   {   };
 	VkExtent2D       m_swapChainExtent        {   };
 
+	VkFormat         m_depthFormat            {   };
+
 	function_queue_t m_mainDeletionQueue      {   };
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Sync Components +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -202,6 +209,9 @@ private:
 
 	/** @brief Recreate the swap chain */
 	void RecreateSwapChain();
+
+	/** @brief Create the depth buffer image */
+	void CreateDepthBufferImage();
 
 	/** @brief Create the render pass */
 	void CreateRenderPass();
@@ -268,6 +278,12 @@ private:
 
 	/** @brief Cleanup the swap chain */
 	void CleanupSwapChain();
+
+	/** @brief Cleanup the Framebuffers */
+	void CleanupFramebuffers();
+
+	/** @brief Cleanup the Depth Buffer */
+	void CleanupDepthBuffer();
 
 	// ======================================================================================================================
 	// ============================================ Vulkan Support Functions ================================================
@@ -349,6 +365,16 @@ private:
 	 */
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &InSurfaceCapabilities);
 
+	/**
+	 * @brief Choose the best supported format
+	 *
+	 * @param InFormats The available formats
+	 * @param tiling The tiling of the image
+	 * @param features The features of the image
+	 * @return The best supported format
+	 */
+	VkFormat ChooseSupportedFormat(const std::vector<VkFormat> &InFormats, VkImageTiling tiling, VkFormatFeatureFlags features) const;
+
 	// ++++++++++++++++++++++++++++++++++++++++++++++++ Create Functions ++++++++++++++++++++++++++++++++++++++++++++++++++
 
 	/**
@@ -368,6 +394,21 @@ private:
 	 * @return The shader module
 	 */
 	[[nodiscard]] VkShaderModule CreateShaderModule(const std::vector<char> &code) const;
+
+	/**
+	 * @brief Create an image
+	 *
+	 * @param width The width of the image
+	 * @param height The height of the image
+	 * @param format The format of the image, the color format
+	 * @param tiling The tiling of the image, how the image data should be arranged in memory
+	 * @param usage The usage of the image, what the image is to be used for
+	 * @param properties The properties of the image, the memory properties of the image
+	 * @param imageMemory The image memory, the handle to the image memory
+	 * @return The image created
+	 */
+	VkImage CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+	                    VkMemoryPropertyFlags properties, VkDeviceMemory *imageMemory) const;
 
 };
 
