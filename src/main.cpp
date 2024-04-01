@@ -24,7 +24,7 @@ InitWindow(const std::string &wName = "Vulkan Window", const int width = 800, co
 
 	// Set GLFW to not create an OpenGL context
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 	window = glfwCreateWindow(width, height, wName.c_str(), nullptr, nullptr);
 
