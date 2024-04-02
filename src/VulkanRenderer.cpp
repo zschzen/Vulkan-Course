@@ -1,5 +1,7 @@
 #include "VulkanRenderer.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <array>
 
@@ -42,6 +44,9 @@ VulkanRenderer::Init(GLFWwindow *newWindow)
 
 		// Mesh Model Loading
 		{
+
+      int firstTexture = CreateTexture("zschzen.jpg");
+
 			std::vector<vertex_t> meshVertices =
 			{
 				{ { -0.4,  0.4, 0.0 }, { 1.0f, 0.33f, 0.33f } },
@@ -187,6 +192,17 @@ VulkanRenderer::Cleanup()
 	// Wait for a logical device to finish before cleanup
 	vkDeviceWaitIdle(m_mainDevice.logicalDevice);
 
+  // Destroy Textures
+  for (size_t i = 0; i < m_textureImages.size(); ++i)
+  {
+    VkImage        image  = m_textureImages[i];
+    VkDeviceMemory memory = m_textureImageMemory[i];
+
+    vkDestroyImage(m_mainDevice.logicalDevice, image, nullptr);
+    vkFreeMemory(m_mainDevice.logicalDevice, memory, nullptr);
+  }
+
+  // Clear buffers
 	CleanupFramebuffers();
 	CleanupDepthBuffer();
 
@@ -2067,3 +2083,81 @@ VulkanRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, Vk
 
 	return image;
 }
+
+int
+VulkanRenderer::CreateTexture(std::string fileName)
+{
+  int width, height;
+  VkDeviceSize imageSize;
+  
+  stbi_uc *imageData = LoadTextureFile(fileName, &width, &height, &imageSize);
+
+  // Create stagind buffer to hold loaded data to copy to device
+  VkBuffer imageStagingBuffer;
+  VkDeviceMemory imageStagingBufferMemory;
+  CreateBuffer(m_mainDevice, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+               &imageStagingBuffer, &imageStagingBufferMemory);
+
+  // Copy image data to staging buffer
+  void *data;
+  vkMapMemory(m_mainDevice.logicalDevice, imageStagingBufferMemory, 0, imageSize, 0, &data);
+  memcpy(data, imageData, static_cast<size_t>(imageSize));
+  vkUnmapMemory(m_mainDevice.logicalDevice, imageStagingBufferMemory);
+
+  // Free image data
+  stbi_image_free(imageData);
+
+  // Create image
+  VkDeviceMemory texImageMemory;
+  VkImage texImage = CreateImage(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, 
+                         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texImageMemory);
+
+  // -- TRANSITION IMAGE LAYOUT --
+  TransitionImageLayout(m_mainDevice.logicalDevice, m_graphicsQueue, m_graphicsCommandPool, texImage,
+                        VK_IMAGE_LAYOUT_UNDEFINED,             // Old layout
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL   // New layout
+  );
+
+
+    // -- COPY IMAGE DATA --
+    CopyImageBuffer(m_mainDevice.logicalDevice, m_graphicsQueue, m_graphicsCommandPool, imageStagingBuffer, texImage, width, height);
+
+
+  // Transition image to shader read layout
+  TransitionImageLayout(m_mainDevice.logicalDevice, m_graphicsQueue, m_graphicsCommandPool, texImage,
+                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,    // Old layout
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // New layout
+  );
+
+  // Add texture data to Vector
+  m_textureImages.push_back(texImage);
+  m_textureImageMemory.push_back(texImageMemory);
+
+  // Destroy staging buffers
+  vkDestroyBuffer(m_mainDevice.logicalDevice, imageStagingBuffer, nullptr);
+  vkFreeMemory(m_mainDevice.logicalDevice, imageStagingBufferMemory, nullptr);
+
+  return m_textureImages.size() - 1;
+}
+
+stbi_uc *
+VulkanRenderer::LoadTextureFile(std::string fileName,
+                                int *width, int *height,
+                                VkDeviceSize *imageSize)
+{
+  int channels;
+
+  // Load image pixel data
+  std::string filePath = "Assets/Textures/" + fileName;
+  stbi_uc *image = stbi_load(filePath.c_str(), width, height, &channels, STBI_rgb_alpha);
+
+  if (!image) throw std::runtime_error("Failed to load Image: '" + filePath + "'");
+
+  // Calculate image size by 4 channels (RGBA)
+  *imageSize = (*width * *height) * 4;
+
+  return image;
+}
+
