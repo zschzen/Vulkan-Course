@@ -2,7 +2,7 @@ add_library(vendor INTERFACE)
 
 # Vulkan
 find_package(Vulkan REQUIRED)
-if (NOT Vulkan_FOUND)
+if(NOT Vulkan_FOUND)
     message(FATAL_ERROR "Vulkan not found!")
 else()
     message(STATUS "Vulkan found:")
@@ -27,6 +27,10 @@ set(GLFW_DOCUMENT_INTERNALS OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
 target_link_libraries(vendor INTERFACE glfw)
 target_include_directories(vendor INTERFACE glfw/include)
+
+# stb
+add_subdirectory(stb)
+target_link_libraries(vendor INTERFACE stb)
 
 # ImGui
 add_subdirectory(imgui)
