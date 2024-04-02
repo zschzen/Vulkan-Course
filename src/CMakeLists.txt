@@ -6,6 +6,8 @@ set(VULKAN_COURSE_SOURCE_FILES
 )
 
 set(VULKAN_COURSE_HEADER_FILES
+        Checks.hpp
+        CommandBuffer.hpp
         Mesh.h
         Utilities.h
         VulkanRenderer.h
