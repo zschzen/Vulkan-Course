@@ -474,11 +474,24 @@ TransitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool commandPool,
   // Transition the image layout
   if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
   {
-    imageMemoryBarrier.srcAccessMask = 0;                            // Memory access stage transition must happen after this stage
+    imageMemoryBarrier.srcAccessMask = 0;                            // Memory access stage transition must happen after this stage. 0 means "at start"
     imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // Memory access stage transition must happen before this stage
 
     srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;                    // Top of pipeline is special stage where commands are initially processed
     dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;                       // Transfer stage is where transfer commands are processed
+  }
+  // Transfer from transfer destination to shader read
+  else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+  {
+    imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // Memory access stage transition must happen after this stage
+    imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;    // Memory access stage transition must happen before this stage
+
+    srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;                       // Transfer stage is where transfer commands are processed
+    dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;                // Fragment stage is where fragment shaders are processed
+  }
+  else
+  {
+    throw std::invalid_argument("Unsupported layout transition!");
   }
 
   vkCmdPipelineBarrier(commandBuffer,
