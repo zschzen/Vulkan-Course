@@ -1,6 +1,7 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
+#include <cstdint>
 #include <deque>
 #include <functional>
 #include <fstream>
@@ -10,51 +11,12 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan_core.h>
 
 #include <glm/glm.hpp>
 
-// ======================================================================================================================
-// ============================================ Utility Functions =======================================================
-// ======================================================================================================================
-
-/**
- * @brief Convert a VkResult to a string
- *
- * @param err The error to convert
- * @return The string representation of the error
- */
-[[nodiscard]]
-static const char*
-VkResultToString(VkResult err)
-{
-	switch(err)
-	{
-		case VK_SUCCESS:                        return "VK_SUCCESS";
-		case VK_NOT_READY:                      return "VK_NOT_READY";
-		case VK_TIMEOUT:                        return "VK_TIMEOUT";
-		case VK_EVENT_SET:                      return "VK_EVENT_SET";
-		case VK_EVENT_RESET:                    return "VK_EVENT_RESET";
-		case VK_INCOMPLETE:                     return "VK_INCOMPLETE";
-		case VK_ERROR_OUT_OF_HOST_MEMORY:       return "VK_ERROR_OUT_OF_HOST_MEMORY";
-		case VK_ERROR_OUT_OF_DEVICE_MEMORY:     return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
-		case VK_ERROR_INITIALIZATION_FAILED:    return "VK_ERROR_INITIALIZATION_FAILED";
-		case VK_ERROR_DEVICE_LOST:              return "VK_ERROR_DEVICE_LOST";
-		case VK_ERROR_MEMORY_MAP_FAILED:        return "VK_ERROR_MEMORY_MAP_FAILED";
-		case VK_ERROR_LAYER_NOT_PRESENT:        return "VK_ERROR_LAYER_NOT_PRESENT";
-		case VK_ERROR_EXTENSION_NOT_PRESENT:    return "VK_ERROR_EXTENSION_NOT_PRESENT";
-		case VK_ERROR_FEATURE_NOT_PRESENT:      return "VK_ERROR_FEATURE_NOT_PRESENT";
-		case VK_ERROR_INCOMPATIBLE_DRIVER:      return "VK_ERROR_INCOMPATIBLE_DRIVER";
-		case VK_ERROR_TOO_MANY_OBJECTS:         return "VK_ERROR_TOO_MANY_OBJECTS";
-		case VK_ERROR_FORMAT_NOT_SUPPORTED:     return "VK_ERROR_FORMAT_NOT_SUPPORTED";
-		case VK_ERROR_SURFACE_LOST_KHR:         return "VK_ERROR_SURFACE_LOST_KHR";
-		case VK_SUBOPTIMAL_KHR:                 return "VK_SUBOPTIMAL_KHR";
-		case VK_ERROR_OUT_OF_DATE_KHR:          return "VK_ERROR_OUT_OF_DATE_KHR";
-		case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR: return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
-		case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR: return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
-		case VK_ERROR_VALIDATION_FAILED_EXT:    return "VK_ERROR_VALIDATION_FAILED_EXT";
-		default: return "Unknown error";
-	}
-}
+#include "Checks.hpp"
+#include "CommandBuffer.hpp"
 
 // ======================================================================================================================
 // ============================================ Macros ==================================================================
@@ -71,20 +33,6 @@ VkResultToString(VkResult err)
 	#endif
 #endif
 
-/// Check if a Vulkan function call was successful
-#define VK_CHECK(x, msg)               \
-do                                     \
-{                                      \
-	VkResult err = x;                  \
-	if (err)   \
-	{                                  \
-		const char* errStr = VkResultToString(err); \
-		fprintf(stderr, "!------------ Vulkan Error ------------!\n"); \
-		fprintf(stderr, "%s @ %s:%i\n", #x, __FILE__, __LINE__); \
-		fprintf(stderr, "Error: %s\n", errStr); \
-		throw std::runtime_error(msg); \
-	}                                  \
-} while (0)
 
 /// Memory aligned allocation
 #ifndef ALIGNED_ALLOC
@@ -414,7 +362,7 @@ AllocateCommandBuffer(VkDevice device, VkCommandPool commandPool, VkCommandBuffe
 }
 
 /**
- * @ brief Copy a buffer to another buffer
+ * @brief Copy a buffer to another buffer
  *
  * @param device The logical device to use
  * @param transferQueue The queue to use for transfer operations
@@ -425,50 +373,120 @@ AllocateCommandBuffer(VkDevice device, VkCommandPool commandPool, VkCommandBuffe
  */
 static void
 CopyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool,
-		   VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize bufferSize)
+		       VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize bufferSize)
 {
-	// Allocate the command buffer
-	VkCommandBuffer transferCommandBuffer {VK_NULL_HANDLE};
-	AllocateCommandBuffer(device, transferCommandPool, transferCommandBuffer);
+  CommandBuffer commandBuffer(device, transferCommandPool, transferQueue);
 
-	// Begin the command buffer
-	VkCommandBufferBeginInfo beginInfo
-	{
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT  // We're only using the command buffer once
-	};
+  // Region of data to copy from and to
+  VkBufferCopy bufferCopyRegion
+  {
+	  .srcOffset = 0,          // Start at the beginning of the source buffer
+	  .dstOffset = 0,          // Start at the beginning of the destination buffer
+	  .size      = bufferSize  // Size of data to copy
+  };
 
-	// Begin recording transfer commands
-	VK_CHECK(vkBeginCommandBuffer(transferCommandBuffer, &beginInfo), "Failed to begin transfer command buffer!");
+  // Command to copy src buffer to dst buffer
+  vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &bufferCopyRegion);
+}
 
-		// Region of data to copy from and to
-		VkBufferCopy bufferCopyRegion
-		{
-			.srcOffset = 0,          // Start at the beginning of the source buffer
-			.dstOffset = 0,          // Start at the beginning of the destination buffer
-			.size      = bufferSize  // Size of data to copy
-		};
+/**
+ * @brief Copy an image buffer
+ *
+ * @param device The logical device to use
+ * @param transferQueue The queue to use for transfer operations
+ * @param transferCommandPool The command pool to use for transfer operations
+ * @param srcBuffer The source buffer
+ * @param dstImage The destination image
+ * @param width The width of the image
+ * @param height The height of the image
+ */
+static void
+CopyImageBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool,
+                VkBuffer srcBuffer, VkImage dstImage, uint32_t width, uint32_t height)
+{
+  CommandBuffer commandBuffer(device, transferCommandPool, transferQueue);
 
-		// Command to copy src buffer to dst buffer
-		vkCmdCopyBuffer(transferCommandBuffer, srcBuffer, dstBuffer, 1, &bufferCopyRegion);
+  VkBufferImageCopy imageRegion =
+    {
+      .bufferOffset      = 0,                           // Offset into data
+      .bufferRowLength   = 0,                           // Row lenght of data to calculate data spacing
+      .bufferImageHeight = 0,                           // Image height to calculate data spacing
+      .imageSubresource  =
+      {
+        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,    // Wich aspect of image to copy
+        .mipLevel       = 0,                            // Mipmap level to copy
+        .baseArrayLayer = 0,                            // If array, starting of it
+        .layerCount     = 1,                            // Number of layers to copy starting at baseArrayLayer
+      },
+      .imageOffset      = { 0, 0, 0 },                  // Offset into image (as opose to raw data in buffer offset)
+      .imageExtent      = { width, height, 1 },         // Size of region to copy as (X, Y, Z) values
+    };
 
-	// End commands
-	VK_CHECK(vkEndCommandBuffer(transferCommandBuffer), "Failed to end transfer command buffer!");
+    // Copy buffer to given image
+    vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageRegion);
+}
 
-	// Queue the command buffer
-	VkSubmitInfo submitInfo
-	{
-		.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.commandBufferCount = 1,
-		.pCommandBuffers    = &transferCommandBuffer
-	};
+/**
+ * @brief Use memory barrier to transition image layout.
+ * @details Transition image layout from one layout to another using memory barrier.
+ *
+ * @param device The logical device to use
+ * @param queue The queue to use for the transition
+ * @param commandPool The command pool to use for the transition
+ * @param image The image to transition
+ * @param oldLayout The old layout of the image
+ * @param newLayout The new layout of the image
+ */
+static void
+TransitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool commandPool,
+                      VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+  CommandBuffer commandBuffer(device, commandPool, queue);
+  /*
+    * Barrier is used to synchronize access to resources, like images
+    * It can be used to transfer queue family ownership, change image layout, transfer queue family ownership
+    *
+    * srcAccessMask: Type of access allowed from source of the image
+    * dstAccessMask: Type of access to be allowed to the destination of the image
+    *    Summarized: At the pont in the pipeline of srcAccessMask, this barries mus occur before dstAccessMask
+    */
+  VkImageMemoryBarrier imageMemoryBarrier =
+  {
+      .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+      .oldLayout           = oldLayout,                 // Layout to transition from
+      .newLayout           = newLayout,                 // Layout to transition to
+      .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,   // Queue family to transition from
+      .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,   // Queue family to transition to
+      .image               = image,                     // Image to be modified as part of barrier
+      .subresourceRange    =
+      {
+        .aspectMask        = VK_IMAGE_ASPECT_COLOR_BIT, // Aspect of image being altered 
+        .baseMipLevel      = 0,                         // First mip level to start the alteration
+        .levelCount        = 1,                         // Number of mip levels to alter starting from base mip level
+        .baseArrayLayer    = 0,                         // First layer to start alterations on
+        .layerCount        = 1,                         // Number of layers to alter starting from baseArrayLayer
+      },
+  };
 
-	// Submit transfer command to transfer queue and wait until it finishes
-	VK_CHECK(vkQueueSubmit(transferQueue, 1, &submitInfo, VK_NULL_HANDLE), "Failed to submit transfer command buffer!");
-	VK_CHECK(vkQueueWaitIdle(transferQueue), "Failed to wait for transfer queue to finish!");
+  VkPipelineStageFlags srcStage;
+  VkPipelineStageFlags dstStage;
 
-	// Free temporary command buffer back to pool
-	vkFreeCommandBuffers(device, transferCommandPool, 1, &transferCommandBuffer);
+  // Transition the image layout
+  if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+  {
+    imageMemoryBarrier.srcAccessMask = 0;                            // Memory access stage transition must happen after this stage
+    imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // Memory access stage transition must happen before this stage
+
+    srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;                    // Top of pipeline is special stage where commands are initially processed
+    dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;                       // Transfer stage is where transfer commands are processed
+  }
+
+  vkCmdPipelineBarrier(commandBuffer,
+                        srcStage, dstStage,          // Pipeline stages (match to src and dst access masks)
+                        0,                           // Dependency flags
+                        0, nullptr,                  // Memory barriers count, data
+                        0, nullptr,                  // Buffer memory barriers count, data
+                        1, &imageMemoryBarrier);     // Image memory barriers count, data
 }
 
 #endif //UTILITIES_H
