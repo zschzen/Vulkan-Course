@@ -1,5 +1,7 @@
 #include "Mesh.h"
 
+#include <cstring>
+
 Mesh::Mesh(const device_t &devices,
 		   VkQueue transferQueue, VkCommandPool transferCommandPool,
 		   std::vector<vertex_t> *vertices, std::vector<uint32_t> *indices)
