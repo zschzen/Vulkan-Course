@@ -28,8 +28,9 @@ public:
 
 	Mesh() = default;
 	Mesh(const device_t &devices,
-		 VkQueue transferQueue, VkCommandPool transferCommandPool,
-		 std::vector<vertex_t> *vertices, std::vector<uint32_t> *indices);
+       VkQueue transferQueue, VkCommandPool transferCommandPool,
+		   std::vector<vertex_t> *vertices, std::vector<uint32_t> *indices,
+       int newTexID);
 	~Mesh();
 
 	/** @brief Get the number of vertices in the mesh */
@@ -47,6 +48,9 @@ public:
 	/** @brief Get the model data */
 	[[nodiscard]] model_t GetModel() const;
 
+  /** @brief Get the texture ID */
+  [[nodiscard]] int GetTextureID() const;
+
 	/** @brief Set the model data */
 	void SetModel(glm::mat4 model);
 
@@ -56,13 +60,13 @@ public:
 private:
 
 	// Vertex buffer
-	int m_vertexCount                   { 0 }; // < The number of vertices in the mesh
-	VkBuffer m_vertexBuffer             {   }; // < The vertex buffer
+	int            m_vertexCount        { 0 }; // < The number of vertices in the mesh
+	VkBuffer       m_vertexBuffer       {   }; // < The vertex buffer
 	VkDeviceMemory m_vertexBufferMemory {   }; // < The memory used to store the vertex buffer
 
 	// Index buffer
-	int m_indexCount                    { 0 }; // < The number of indices in the mesh
-	VkBuffer m_indexBuffer              {   }; // < The index buffer
+	int            m_indexCount         { 0 }; // < The number of indices in the mesh
+	VkBuffer       m_indexBuffer        {   }; // < The index buffer
 	VkDeviceMemory m_indexBufferMemory  {   }; // < The memory used to store the index buffer
 
 	// Vulkan device
@@ -70,6 +74,9 @@ private:
 
 	// Model data
 	model_t m_model { .mat = glm::mat4(1.0f) };
+
+  // Texture
+  int m_textureID { -1 };
 
 	/**
 	 * @brief Create the vertex buffer
@@ -111,6 +118,12 @@ FORCE_INLINE VkBuffer
 Mesh::GetIndexBuffer() const
 {
 	return m_indexBuffer;
+}
+
+FORCE_INLINE int
+Mesh::GetTextureID() const
+{
+  return m_textureID;
 }
 
 FORCE_INLINE void

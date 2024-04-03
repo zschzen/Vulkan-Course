@@ -3,12 +3,14 @@
 #include <cstring>
 
 Mesh::Mesh(const device_t &devices,
-		   VkQueue transferQueue, VkCommandPool transferCommandPool,
-		   std::vector<vertex_t> *vertices, std::vector<uint32_t> *indices)
+           VkQueue transferQueue, VkCommandPool transferCommandPool,
+           std::vector<vertex_t> *vertices, std::vector<uint32_t> *indices,
+           int newTexID)
+    : m_textureID(newTexID)
+    , m_devices(devices)
 {
 	m_vertexCount    = static_cast<int>(vertices->size());
 	m_indexCount     = static_cast<int>(indices->size());
-	m_devices        = devices;
 
 	CreateVertexBuffer(transferQueue, transferCommandPool, vertices);
 	CreateIndexBuffer(transferQueue, transferCommandPool, indices);

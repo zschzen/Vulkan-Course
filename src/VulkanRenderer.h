@@ -119,13 +119,14 @@ private:
 	 * For example uniform buffers (like UBOs) and image samplers
 	 */
 	VkDescriptorSetLayout m_descriptorSetLayout { VK_NULL_HANDLE };
-
-	/** @brief Push constant range */
-	VkPushConstantRange m_pushConstantRange {  };
+  VkDescriptorSetLayout m_samplerSetLayout    { VK_NULL_HANDLE };
+	VkPushConstantRange   m_pushConstantRange   {  };
 
 	/** @brief Descriptor pool is used to allocate descriptor sets to write descriptors into. */
-	VkDescriptorPool m_descriptorPool                  { VK_NULL_HANDLE };
-	std::vector<VkDescriptorSet> m_descriptorSets      {  };
+	VkDescriptorPool             m_descriptorPool         { VK_NULL_HANDLE };
+  VkDescriptorPool             m_samplerDescriptorPool  { VK_NULL_HANDLE };
+	std::vector<VkDescriptorSet> m_descriptorSets         {  };               // < For VP UBO
+  std::vector<VkDescriptorSet> m_samplerDescriptorSets  {  };               // < For Textures
 
 	std::vector<VkBuffer>       m_vpUniformBuffers       {  };
 	std::vector<VkDeviceMemory> m_vpUniformBuffersMemory {  };
@@ -134,6 +135,7 @@ private:
 
   std::vector<VkImage>        m_textureImages      { };
   std::vector<VkDeviceMemory> m_textureImageMemory { };
+  std::vector<VkImageView>    m_textureImageViews  { };
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++ Dynamic Uniform Buffers +++++++++++++++++++++++++++++++++++++++++++++
 
@@ -176,6 +178,10 @@ private:
 	VkExtent2D       m_swapChainExtent        {   };
 
 	VkFormat         m_depthFormat            {   };
+
+  /** @brief The texture sampler */
+  VkSampler m_textureSampler { VK_NULL_HANDLE };
+
 
 	function_queue_t m_mainDeletionQueue      {   };
 
@@ -244,6 +250,9 @@ private:
 
 	/** @brief Create the semaphores */
 	void CreateSemaphores();
+
+  /** @brief Create the texture sampler */
+  void CreateTextureSampler();
 
 	/* --------------- Descriptor Functions --------------- */
 
@@ -424,8 +433,22 @@ private:
    * @param fileName The name of the file
    * @return The texture image index
    */
+  int CreateTextureImage(std::string fileName);
+
+  /**
+   * @brief Create a texture image view
+   *
+   * @param image The image
+   * @return The texture image view
+   */
   int CreateTexture(std::string fileName);
 
+  /**
+   * @brief Create a texture sampler
+   *
+   * @return Descriptor set index
+   */
+  int CreateTextureDescriptor(VkImageView textureImage);
 
 	// ++++++++++++++++++++++++++++++++++++++++++++++++ Load Functions ++++++++++++++++++++++++++++++++++++++++++++++++++
 

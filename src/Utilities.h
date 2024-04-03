@@ -160,10 +160,11 @@ typedef struct function_queue_t
  */
 typedef struct vertex_t
 {
-	typedef std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions;
+	typedef std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions;
 
-	glm::vec3 pos   {};
-	glm::vec3 color {};
+	glm::vec3 pos      { }; // Position (x, y, z)
+	glm::vec3 color    { }; // Color (r, g, b)
+  glm::vec2 texCoord { }; // texCoord (u, v)
 
 	/** @brief Get the binding description */
 	static VkVertexInputBindingDescription
@@ -197,7 +198,13 @@ typedef struct vertex_t
 					.binding  = 0,
 					.format   = VK_FORMAT_R32G32B32_SFLOAT,
 					.offset   = offsetof(vertex_t, color)
-				}
+				},
+        {
+          .location = 2,
+          .binding  = 0,
+          .format   = VK_FORMAT_R32G32_SFLOAT,
+          .offset   = offsetof(vertex_t, texCoord)
+        }
 			}
 		};
 	}
