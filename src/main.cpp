@@ -120,17 +120,15 @@ main()
 			// Rotate model based on deltaTime
 			angle += std::fmod(45.0f * static_cast<float>(deltaTime), 360.0F);
 
-			// Calculate a translation factor based on time
-			double translationFactor = std::sin(glfwGetTime());
-
 			glm::mat4 firstModel(1.0f);
 			glm::mat4 secondModel(1.0f);
 
-			firstModel = glm::translate(firstModel, glm::vec3(0.0f, 0.0f, -2.5f + translationFactor));
+			firstModel = glm::translate(firstModel, glm::vec3(0.0f, 0.0f, -2.5f));
 			firstModel = glm::rotate(firstModel, glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f));
 
-			secondModel = glm::translate(secondModel, glm::vec3(0.0f, 0.0f, -3.0f - translationFactor));
+			secondModel = glm::translate(secondModel, glm::vec3(0.0f, 0.0f, -3.0f));
 			secondModel = glm::rotate(secondModel, glm::radians(-angle * 5), glm::vec3(0.0f, 0.0f, 1.0f));
+      secondModel = glm::scale(secondModel, glm::vec3(1.25f));
 
 			vulkanRenderer.UpdateModel(0, firstModel);
 			vulkanRenderer.UpdateModel(1, secondModel);
